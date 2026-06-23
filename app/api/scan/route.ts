@@ -23,6 +23,23 @@ function cleanDomain(input: string) {
     .toLowerCase();
 }
 
+function isValidDomain(domain: string) {
+  const domainRegex =
+    /^(?!-)(?:[a-zA-Z0-9-]{1,63}\.)+[a-zA-Z]{2,63}$/;
+
+  return domainRegex.test(domain);
+}
+
+function isBlockedDomain(domain: string) {
+  const blockedDomains = [
+    "localhost",
+    "local",
+    "internal",
+  ];
+
+  return blockedDomains.includes(domain);
+}
+
 async function getTxtRecords(domain: string) {
   try {
     const records = await resolver.resolveTxt(domain);
@@ -172,6 +189,15 @@ export async function POST(req: Request) {
   }
 
   const domain = cleanDomain(rawDomain);
+  if (!isValidDomain(domain) || isBlockedDomain(domain)) {
+  return Response.json(
+    {
+      error:
+        "Please enter a valid public domain, such as example.com.",
+    },
+    { status: 400 }
+  );
+}
 
   const [spf, dmarc, ssl, headers] = await Promise.all([
     checkSpf(domain),
