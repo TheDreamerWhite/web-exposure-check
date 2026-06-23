@@ -1,9 +1,14 @@
 # Web Exposure Check
 
-Web Exposure Check is a lightweight Next.js app for reviewing basic public
-website exposure signals. It checks a domain for HTTPS behavior, TLS certificate
-health, email authentication records, and common browser security headers, then
-returns a simple score, risk level, and suggested fixes.
+Web Exposure Check is evolving into a continuous web exposure monitoring SaaS
+for small and medium-sized businesses. Today it provides a public scanner for
+basic website exposure signals. The product direction is to support accounts,
+authorized domain inventories, scheduled scans, reports, AI-assisted risk
+analysis, remediation guidance, and paid subscriptions.
+
+The current scanner checks a domain for HTTPS behavior, TLS certificate health,
+email authentication records, and common browser security headers, then returns
+a simple score, risk level, and suggested fixes.
 
 This is a first-pass visibility tool. It is not a vulnerability scanner,
 penetration test, or replacement for a professional security assessment.
@@ -13,10 +18,45 @@ penetration test, or replacement for a professional security assessment.
 - Public website scan dashboard at `/scan`
 - Score display, risk explanation, check cards, and suggested fixes
 - Local browser scan history with copy report and JSON export
+- SaaS foundation dashboard at `/dashboard`
+- Local authorized-domain inventory at `/dashboard/domains`
+- Domain detail placeholder with a path back to the public scanner
 - Checks for SSL/TLS, HTTPS redirect, SPF, DMARC, HSTS, CSP, and frame protection
 - JSON API at `/api/scan`
 - Static public pages for features, about, privacy, and terms
 - Responsive layout for desktop and mobile
+
+## MVP 2.0 SaaS Foundation
+
+MVP 2.0 adds the application structure for the future paid platform without
+introducing a database or authentication dependency too early.
+
+- Dashboard overview with domain count, latest scan placeholders, risk summary,
+  add-domain CTA, and subscription placeholder
+- Domain management routes:
+  - `/dashboard/domains`
+  - `/dashboard/domains/new`
+  - `/dashboard/domains/[domainId]`
+- LocalStorage-backed domain records for temporary local testing
+- Authorization confirmation before adding a monitored domain
+- Safety copy for lawful, authorized use
+- Future integration path from domain detail pages to `/scan?domain=example.com`
+- Health endpoint at `/api/health`
+
+## SaaS Roadmap
+
+Planned product milestones:
+
+- Authentication and user accounts
+- Organization workspaces and role-based access
+- Database persistence for domains, scan results, findings, reports, and billing
+- Scheduled weekly or monthly scans
+- Email security reports and alerting
+- AI-assisted risk analysis and remediation suggestions
+- Subscription billing for paid plans
+
+See [docs/roadmap.md](docs/roadmap.md) and
+[docs/database-schema.md](docs/database-schema.md) for implementation planning.
 
 ## Local Setup
 
@@ -123,6 +163,10 @@ Invalid requests return JSON errors:
 ## Limitations
 
 - Checks are limited to public DNS, TLS, redirect, and HTTP header signals.
+- MVP 2.0 dashboard domain data is stored in localStorage until database
+  persistence is added.
+- The dashboard is a semi-protected structure only; real authentication is not
+  implemented yet.
 - Results can be affected by DNS propagation, CDN behavior, redirects, bot
   blocking, and temporary network failures.
 - A healthy score does not prove that a website is secure.
