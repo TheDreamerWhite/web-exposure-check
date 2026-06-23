@@ -1,9 +1,14 @@
 import type { Metadata } from "next";
+import { SiteFooter } from "./components/site-footer";
+import { SiteHeader } from "./components/site-header";
 import "./globals.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://web-exposure-check.vercel.app"),
-  title: "Web Exposure Check | Website Security Scanner",
+  title: {
+    default: "Web Exposure Check | Website Security Scanner",
+    template: "%s | Web Exposure Check",
+  },
   description:
     "Check your website exposure, SSL certificate, SPF, DMARC and security headers in seconds.",
   keywords: [
@@ -40,7 +45,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <SiteHeader />
+        {children}
+        <SiteFooter />
+      </body>
     </html>
   );
 }

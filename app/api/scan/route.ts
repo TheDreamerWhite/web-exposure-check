@@ -1,5 +1,7 @@
 import dns from "dns";
+import net from "net";
 import tls from "tls";
+import { domainToASCII } from "url";
 
 export const runtime = "nodejs";
 
@@ -11,33 +13,99 @@ type SecurityHeadersResult = {
     xFrameOptions: CheckStatus;
 };
 
+const MAX_DOMAIN_LENGTH = 253;
+
 const resolver = new dns.promises.Resolver();
 resolver.setServers(["1.1.1.1", "8.8.8.8"]);
 
 function cleanDomain(input: string) {
-    return input
-        .trim()
-        .replace(/^https?:\/\//, "")
-        .replace(/^www\./, "")
-        .split("/")[0]
-        .toLowerCase();
+    const rawValue = input.trim();
+
+    if (!rawValue || rawValue.length > MAX_DOMAIN_LENGTH) {
+        return "";
+    }
+
+    if (/\s|\\|@/.test(rawValue)) {
+        return "";
+    }
+
+    const hasProtocol = /^[a-z][a-z0-9+.-]*:\/\//i.test(rawValue);
+
+    if (hasProtocol && !/^https?:\/\//i.test(rawValue)) {
+        return "";
+    }
+
+    try {
+        const url = new URL(hasProtocol ? rawValue : `https://${rawValue}`);
+
+        if (url.username || url.password || url.port) {
+            return "";
+        }
+
+        const hostname = url.hostname
+            .replace(/^\[|\]$/g, "")
+            .replace(/^www\./i, "")
+            .replace(/\.$/, "")
+            .toLowerCase();
+
+        if (net.isIP(hostname)) {
+            return "";
+        }
+
+        return domainToASCII(hostname);
+    } catch {
+        return "";
+    }
 }
 
 function isValidDomain(domain: string) {
-    const domainRegex =
-        /^(?!-)(?:[a-zA-Z0-9-]{1,63}\.)+[a-zA-Z]{2,63}$/;
+    if (!domain || domain.length > MAX_DOMAIN_LENGTH) {
+        return false;
+    }
 
-    return domainRegex.test(domain);
+    const labels = domain.split(".");
+
+    if (labels.length < 2) {
+        return false;
+    }
+
+    const labelRegex = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/;
+    const topLevelDomain = labels[labels.length - 1];
+
+    return (
+        labels.every((label) => labelRegex.test(label)) &&
+        /[a-z]/.test(topLevelDomain)
+    );
 }
 
 function isBlockedDomain(domain: string) {
-    const blockedDomains = [
+    const blockedDomains = new Set([
         "localhost",
-        "local",
+    ]);
+    const blockedTlds = new Set([
+        "example",
         "internal",
-    ];
+        "invalid",
+        "local",
+        "localhost",
+        "test",
+    ]);
+    const labels = domain.split(".");
+    const topLevelDomain = labels[labels.length - 1];
 
-    return blockedDomains.includes(domain);
+    return blockedDomains.has(domain) || blockedTlds.has(topLevelDomain);
+}
+
+function jsonError(message: string, status: number) {
+    return Response.json({ error: message }, { status });
+}
+
+async function parseJsonBody(req: Request): Promise<unknown> {
+    try {
+        return await req.json();
+    } catch {
+        return null;
+    }
 }
 
 async function getTxtRecords(domain: string) {
@@ -72,20 +140,19 @@ async function checkDmarc(domain: string): Promise<CheckStatus> {
 
 async function checkSsl(domain: string): Promise<CheckStatus> {
     return new Promise((resolve) => {
+        let settled = false;
         const socket = tls.connect(
             {
                 host: domain,
                 port: 443,
                 servername: domain,
                 rejectUnauthorized: false,
-                timeout: 5000,
             },
             () => {
                 const certificate = socket.getPeerCertificate();
 
                 if (!certificate || !certificate.valid_to) {
-                    socket.end();
-                    resolve("Warning");
+                    finish("Warning");
                     return;
                 }
 
@@ -95,30 +162,34 @@ async function checkSsl(domain: string): Promise<CheckStatus> {
                     (validTo.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
                 );
 
-                socket.end();
-
-                if (!socket.authorized) {
-                    resolve("Warning");
+                if (!socket.authorized || Number.isNaN(validTo.getTime())) {
+                    finish("Warning");
                     return;
                 }
 
                 if (daysRemaining <= 14) {
-                    resolve("Warning");
+                    finish("Warning");
                     return;
                 }
 
-                resolve("OK");
+                finish("OK");
             }
         );
 
-        socket.on("timeout", () => {
-            socket.destroy();
-            resolve("Warning");
-        });
+        function finish(status: CheckStatus) {
+            if (settled) {
+                return;
+            }
 
-        socket.on("error", () => {
-            resolve("Warning");
-        });
+            settled = true;
+            socket.destroy();
+            resolve(status);
+        }
+
+        socket.setTimeout(5000);
+
+        socket.once("timeout", () => finish("Warning"));
+        socket.once("error", () => finish("Warning"));
     });
 }
 
@@ -202,50 +273,71 @@ function getRiskLevel(score: number) {
     return "High Risk";
 }
 
-export async function POST(req: Request) {
-    const body = await req.json();
-    const rawDomain = body.domain;
-
-    if (!rawDomain || typeof rawDomain !== "string") {
-        return Response.json(
-            { error: "Domain is required" },
-            { status: 400 }
-        );
-    }
-
-    const domain = cleanDomain(rawDomain);
-    if (!isValidDomain(domain) || isBlockedDomain(domain)) {
-        return Response.json(
-            {
-                error:
-                    "Please enter a valid public domain, such as example.com.",
-            },
-            { status: 400 }
-        );
-    }
-
-    const [spf, dmarc, ssl, httpsRedirect, headers] = await Promise.all([
-        checkSpf(domain),
-        checkDmarc(domain),
-        checkSsl(domain),
-        checkHttpsRedirect(domain),
-        checkSecurityHeaders(domain),
-    ]);
-
-    const score = calculateScore(spf, dmarc, ssl, httpsRedirect, headers);
-
-    return Response.json({
-        domain,
-        score,
-        riskLevel: getRiskLevel(score),
-        checks: {
-            ssl,
-            httpsRedirect,
-            spf,
-            dmarc,
-            hsts: headers.hsts,
-            csp: headers.csp,
-            xFrameOptions: headers.xFrameOptions,
+export async function GET() {
+    return Response.json(
+        {
+            error:
+                'Use POST /api/scan with a JSON body like { "domain": "example.com" }.',
         },
-    });
+        {
+            status: 405,
+            headers: {
+                Allow: "POST",
+            },
+        }
+    );
+}
+
+export async function POST(req: Request) {
+    try {
+        const body = await parseJsonBody(req);
+
+        if (!body || typeof body !== "object" || Array.isArray(body)) {
+            return jsonError("Request body must be a valid JSON object.", 400);
+        }
+
+        const rawDomain = (body as { domain?: unknown }).domain;
+
+        if (!rawDomain || typeof rawDomain !== "string") {
+            return jsonError("Domain is required.", 400);
+        }
+
+        const domain = cleanDomain(rawDomain);
+
+        if (!isValidDomain(domain) || isBlockedDomain(domain)) {
+            return jsonError(
+                "Please enter a valid public domain, such as example.com.",
+                400
+            );
+        }
+
+        const [spf, dmarc, ssl, httpsRedirect, headers] = await Promise.all([
+            checkSpf(domain),
+            checkDmarc(domain),
+            checkSsl(domain),
+            checkHttpsRedirect(domain),
+            checkSecurityHeaders(domain),
+        ]);
+
+        const score = calculateScore(spf, dmarc, ssl, httpsRedirect, headers);
+
+        return Response.json({
+            domain,
+            score,
+            riskLevel: getRiskLevel(score),
+            checks: {
+                ssl,
+                httpsRedirect,
+                spf,
+                dmarc,
+                hsts: headers.hsts,
+                csp: headers.csp,
+                xFrameOptions: headers.xFrameOptions,
+            },
+        });
+    } catch (error) {
+        console.error("Unexpected scan API failure:", error);
+
+        return jsonError("Unable to complete scan. Please try again later.", 500);
+    }
 }
