@@ -14,6 +14,10 @@ type SecurityHeadersResult = {
 };
 
 const MAX_DOMAIN_LENGTH = 253;
+const DNS_TIMEOUT_MS = 4000;
+const TLS_TIMEOUT_MS = 5000;
+const HTTP_TIMEOUT_MS = 7000;
+const HEADER_TIMEOUT_MS = 5000;
 
 const resolver = new dns.promises.Resolver();
 resolver.setServers(["1.1.1.1", "8.8.8.8"]);
@@ -108,12 +112,38 @@ async function parseJsonBody(req: Request): Promise<unknown> {
     }
 }
 
+async function withTimeout<T>(
+    promise: Promise<T>,
+    timeoutMs: number,
+    fallback: T
+): Promise<T> {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+
+    try {
+        return await Promise.race([
+            promise,
+            new Promise<T>((resolve) => {
+                timer = setTimeout(() => resolve(fallback), timeoutMs);
+            }),
+        ]);
+    } finally {
+        if (timer) {
+            clearTimeout(timer);
+        }
+    }
+}
+
 async function getTxtRecords(domain: string) {
     try {
-        const records = await resolver.resolveTxt(domain);
+        const records = await withTimeout(
+            resolver.resolveTxt(domain),
+            DNS_TIMEOUT_MS,
+            []
+        );
+
         return records.map((record) => record.join(""));
     } catch (error) {
-        console.error(`DNS TXT lookup failed for ${domain}:`, error);
+        console.warn(`DNS TXT lookup failed for ${domain}:`, error);
         return [];
     }
 }
@@ -186,7 +216,7 @@ async function checkSsl(domain: string): Promise<CheckStatus> {
             resolve(status);
         }
 
-        socket.setTimeout(5000);
+        socket.setTimeout(TLS_TIMEOUT_MS);
 
         socket.once("timeout", () => finish("Warning"));
         socket.once("error", () => finish("Warning"));
@@ -198,7 +228,7 @@ async function checkHttpsRedirect(domain: string): Promise<CheckStatus> {
         const response = await fetch(`http://${domain}`, {
             method: "GET",
             redirect: "follow",
-            signal: AbortSignal.timeout(7000),
+            signal: AbortSignal.timeout(HTTP_TIMEOUT_MS),
         });
 
         const finalUrl = response.url.toLowerCase();
@@ -220,7 +250,7 @@ async function checkSecurityHeaders(
         const response = await fetch(`https://${domain}`, {
             method: "GET",
             redirect: "follow",
-            signal: AbortSignal.timeout(5000),
+            signal: AbortSignal.timeout(HEADER_TIMEOUT_MS),
         });
 
         const headers = response.headers;
@@ -261,8 +291,6 @@ function calculateScore(
     if (headers.hsts === "Warning") score -= 5;
     if (headers.csp === "Warning") score -= 5;
     if (headers.xFrameOptions === "Warning") score -= 5;
-
-
 
     return Math.max(score, 0);
 }

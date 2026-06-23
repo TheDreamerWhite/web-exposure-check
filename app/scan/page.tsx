@@ -285,6 +285,7 @@ export default function ScanPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [copyStatus, setCopyStatus] = useState("");
+  const [scanTakingLonger, setScanTakingLonger] = useState(false);
 
   useEffect(() => {
     const currentHistory = parseHistory(localStorage.getItem(HISTORY_KEY));
@@ -304,6 +305,16 @@ export default function ScanPage() {
 
     return () => window.clearTimeout(timer);
   }, []);
+
+  useEffect(() => {
+    if (!loading) return;
+
+    const timer = window.setTimeout(() => {
+      setScanTakingLonger(true);
+    }, 4500);
+
+    return () => window.clearTimeout(timer);
+  }, [loading]);
 
   const problemEntries = useMemo(
     () =>
@@ -342,6 +353,7 @@ export default function ScanPage() {
     setError("");
     setCopyStatus("");
     setResult(null);
+    setScanTakingLonger(false);
 
     if (!cleanDomain) {
       setError("Enter a domain to scan.");
@@ -379,10 +391,11 @@ export default function ScanPage() {
       setError(
         scanError instanceof Error
           ? scanError.message
-          : "Scan failed. Check the domain and try again."
+          : "Scan failed. Check the domain and try again in a few seconds."
       );
     } finally {
       setLoading(false);
+      setScanTakingLonger(false);
     }
   }
 
@@ -443,9 +456,12 @@ export default function ScanPage() {
 
     link.href = url;
     link.download = `${result.domain}-web-exposure-report.json`;
+    link.style.display = "none";
+    document.body.appendChild(link);
     link.click();
+    link.remove();
 
-    window.setTimeout(() => URL.revokeObjectURL(url), 0);
+    window.setTimeout(() => URL.revokeObjectURL(url), 100);
   }
 
   return (
@@ -495,9 +511,23 @@ export default function ScanPage() {
               disabled={loading}
               className="min-h-12 rounded-md bg-slate-950 px-6 text-sm font-semibold text-white transition hover:bg-teal-800 focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {loading ? "Scanning..." : "Run scan"}
+              {loading
+                ? scanTakingLonger
+                  ? "Still checking..."
+                  : "Checking..."
+                : "Run scan"}
             </button>
           </form>
+
+          <div className="mt-3 grid gap-2 text-sm leading-6 text-slate-600 md:grid-cols-2">
+            <p>
+              Scans may take a few seconds while DNS, TLS, redirects, and headers
+              respond.
+            </p>
+            <p>
+              This is a public exposure review, not a full penetration test.
+            </p>
+          </div>
 
           {error && (
             <p

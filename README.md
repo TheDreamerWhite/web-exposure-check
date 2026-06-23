@@ -47,11 +47,34 @@ Create a production build:
 npm run build
 ```
 
+On Windows PowerShell, this equivalent command avoids `npm.ps1` execution-policy
+blocks:
+
+```bash
+npm.cmd run build
+```
+
 Run the production server after building:
 
 ```bash
 npm run start
 ```
+
+## Deployment
+
+Vercel can deploy this project from a connected GitHub repository. Before a
+future deployment, verify the project locally with:
+
+```bash
+npm.cmd run build
+```
+
+Use `npm.cmd` on Windows if PowerShell blocks `npm.ps1`. The app uses Next.js
+App Router routes, including the serverless-compatible scan handler at
+`app/api/scan/route.ts`.
+
+Deploy only code you are authorized to publish, and use the scanner only for
+domains you own or are explicitly authorized to assess.
 
 ## API Usage
 
