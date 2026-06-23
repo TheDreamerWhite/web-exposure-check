@@ -1,33 +1,18 @@
 import Link from "next/link";
-import { requireDashboardContext } from "@/lib/dashboard/context";
+import { requireOrganizationContext } from "@/lib/dashboard/context";
 import {
   countRisk,
   getDashboardSummary,
 } from "@/lib/dashboard/data";
 import {
+  formatDashboardDateTime,
   formatFrequency,
   formatStoredDate,
 } from "./components/domain-storage";
 import { RiskPill } from "./components/risk-pill";
 
 export default async function DashboardPage() {
-  const { organization } = await requireDashboardContext();
-
-  if (!organization) {
-    return (
-      <div className="rounded-lg border border-slate-200 bg-white p-8 text-center shadow-sm">
-        <h1 className="text-2xl font-bold text-slate-950">
-          Organization setup required
-        </h1>
-        <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-slate-600">
-          Your account is authenticated, but no organization record was found.
-          This can happen when email confirmation delayed the initial workspace
-          setup. Create or repair the organization in Supabase before adding
-          domains.
-        </p>
-      </div>
-    );
-  }
+  const { organization } = await requireOrganizationContext();
 
   const summary = await getDashboardSummary(organization.id);
   const latestDomains = [...summary.domains]
@@ -139,7 +124,7 @@ export default async function DashboardPage() {
                     <p className="mt-1 text-xs text-slate-500">
                       Frequency: {formatFrequency(domain.monitoring_frequency)} |
                       Added {formatStoredDate(domain.created_at)} | Last scan:{" "}
-                      {formatStoredDate(domain.latestScan?.scanned_at || null)}
+                      {formatDashboardDateTime(domain.latestScan?.scanned_at || null)}
                     </p>
                   </div>
                   <div className="flex items-center gap-3 sm:justify-end">
@@ -193,7 +178,8 @@ export default async function DashboardPage() {
                     <span className="font-semibold text-slate-950">
                       {scan.domain}
                     </span>{" "}
-                    scored {scan.score}/100 on {formatStoredDate(scan.scanned_at)}.
+                    scored {scan.score}/100 on{" "}
+                    {formatDashboardDateTime(scan.scanned_at)}.
                   </div>
                 ))
               )}

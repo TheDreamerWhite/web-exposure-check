@@ -1,21 +1,17 @@
 import Link from "next/link";
-import { requireDashboardContext } from "@/lib/dashboard/context";
+import { requireOrganizationContext } from "@/lib/dashboard/context";
 import { getDashboardSummary } from "@/lib/dashboard/data";
 import {
+  formatDashboardDateTime,
   formatDomainStatus,
   formatFrequency,
-  formatStoredDate,
 } from "../components/domain-storage";
 import { RiskPill } from "../components/risk-pill";
 import { StatusPill } from "../components/status-pill";
 
 export default async function DomainsPage() {
-  const { organization } = await requireDashboardContext();
-  const summary = organization
-    ? await getDashboardSummary(organization.id)
-    : {
-        domains: [],
-      };
+  const { organization } = await requireOrganizationContext();
+  const summary = await getDashboardSummary(organization.id);
 
   return (
     <div className="space-y-6">
@@ -51,17 +47,7 @@ export default async function DomainsPage() {
         </div>
 
         <div className="mt-5 space-y-3">
-          {!organization ? (
-            <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-8 text-center">
-              <h2 className="text-xl font-bold text-slate-950">
-                Organization setup required
-              </h2>
-              <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-slate-600">
-                No organization record was found for this user. Create or repair
-                the organization in Supabase before adding domains.
-              </p>
-            </div>
-          ) : summary.domains.length === 0 ? (
+          {summary.domains.length === 0 ? (
             <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-8 text-center">
               <h2 className="text-xl font-bold text-slate-950">No domains yet</h2>
               <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-slate-600">
@@ -95,7 +81,7 @@ export default async function DomainsPage() {
                     Monitoring frequency:{" "}
                     {formatFrequency(domain.monitoring_frequency)} | Last
                     scanned date:{" "}
-                    {formatStoredDate(domain.latestScan?.scanned_at || null)}
+                    {formatDashboardDateTime(domain.latestScan?.scanned_at || null)}
                   </p>
                   <p className="mt-1 text-xs font-medium text-slate-500">
                     Authorization confirmed:{" "}

@@ -1,4 +1,4 @@
-import { requireDashboardContext } from "@/lib/dashboard/context";
+import { requireOrganizationContext } from "@/lib/dashboard/context";
 
 const reportCards = [
   {
@@ -22,7 +22,7 @@ const reportCards = [
 ];
 
 export default async function ReportsPage() {
-  const { organization } = await requireDashboardContext();
+  const { organization } = await requireOrganizationContext();
 
   return (
     <div className="space-y-6">

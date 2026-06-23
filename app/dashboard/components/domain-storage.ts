@@ -95,6 +95,20 @@ export function formatStoredDate(value: string | null) {
   }
 }
 
+export function formatDashboardDateTime(value: string | null) {
+  if (!value) return "Not yet";
+
+  try {
+    return new Intl.DateTimeFormat("en-GB", {
+      dateStyle: "medium",
+      timeStyle: "short",
+      timeZone: "Europe/Madrid",
+    }).format(new Date(value));
+  } catch {
+    return "Not yet";
+  }
+}
+
 export function readStoredDomains(): MonitoredDomain[] {
   if (typeof window === "undefined") return [];
 

@@ -1,4 +1,4 @@
-import { requireDashboardContext } from "@/lib/dashboard/context";
+import { requireOrganizationContext } from "@/lib/dashboard/context";
 
 const plans = [
   {
@@ -27,7 +27,7 @@ const plans = [
 ];
 
 export default async function BillingPage() {
-  const { organization } = await requireDashboardContext();
+  const { organization } = await requireOrganizationContext();
 
   return (
     <div className="space-y-6">

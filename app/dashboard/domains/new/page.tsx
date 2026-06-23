@@ -1,6 +1,9 @@
+import { requireOrganizationContext } from "@/lib/dashboard/context";
 import { NewDomainForm } from "./new-domain-form";
 
-export default function NewDomainPage() {
+export default async function NewDomainPage() {
+  await requireOrganizationContext();
+
   return (
     <div className="space-y-6">
       <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">

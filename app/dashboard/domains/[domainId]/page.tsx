@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { requireDashboardContext } from "@/lib/dashboard/context";
+import { requireOrganizationContext } from "@/lib/dashboard/context";
 import {
   getDomainById,
   getFindingsForDomain,
@@ -7,9 +7,9 @@ import {
   getRecentScansForDomain,
 } from "@/lib/dashboard/data";
 import {
+  formatDashboardDateTime,
   formatDomainStatus,
   formatFrequency,
-  formatStoredDate,
 } from "../../components/domain-storage";
 import { RiskPill } from "../../components/risk-pill";
 import { StatusPill } from "../../components/status-pill";
@@ -23,20 +23,7 @@ type DomainDetailPageProps = {
 
 export default async function DomainDetailPage({ params }: DomainDetailPageProps) {
   const { domainId } = await params;
-  const { organization } = await requireDashboardContext();
-
-  if (!organization) {
-    return (
-      <div className="rounded-lg border border-slate-200 bg-white p-8 text-center shadow-sm">
-        <h1 className="text-2xl font-bold text-slate-950">
-          Organization setup required
-        </h1>
-        <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-slate-600">
-          No organization record was found for this user.
-        </p>
-      </div>
-    );
-  }
+  const { organization } = await requireOrganizationContext();
 
   const domain = await getDomainById(domainId, organization.id);
 
@@ -123,7 +110,7 @@ export default async function DomainDetailPage({ params }: DomainDetailPageProps
         <article className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
           <p className="text-sm font-medium text-slate-500">Latest scan</p>
           <p className="mt-4 text-xl font-black text-slate-950">
-            {formatStoredDate(latestScan?.scanned_at || null)}
+            {formatDashboardDateTime(latestScan?.scanned_at || null)}
           </p>
           <p className="mt-2 text-sm text-slate-600">Persisted in Supabase.</p>
         </article>
@@ -147,7 +134,7 @@ export default async function DomainDetailPage({ params }: DomainDetailPageProps
                   >
                     <div>
                       <p className="font-semibold text-slate-950">
-                        {formatStoredDate(scan.scanned_at)}
+                        {formatDashboardDateTime(scan.scanned_at)}
                       </p>
                       <p className="mt-1 text-sm text-slate-600">
                         {scan.domain} scored {scan.score}/100.

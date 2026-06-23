@@ -46,6 +46,11 @@ export async function signupAction(
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
+    options: {
+      data: {
+        organization_name: organizationName,
+      },
+    },
   });
 
   if (error) {
@@ -57,7 +62,7 @@ export async function signupAction(
   if (!data.user || !data.session) {
     return {
       message:
-        "Account created. Check your email to confirm your address, then sign in to finish organization setup.",
+        "Please confirm your email. Your workspace will be created when you first sign in.",
     };
   }
 

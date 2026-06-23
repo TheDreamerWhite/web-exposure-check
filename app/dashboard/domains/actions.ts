@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { requireDashboardContext } from "@/lib/dashboard/context";
+import { requireOrganizationContext } from "@/lib/dashboard/context";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { MonitoringFrequency } from "@/lib/types/database";
 import {
@@ -68,14 +68,7 @@ export async function addDomainAction(
     };
   }
 
-  const { organization } = await requireDashboardContext();
-
-  if (!organization) {
-    return {
-      ...nextState,
-      error: "Create or repair your organization before adding domains.",
-    };
-  }
+  const { organization } = await requireOrganizationContext();
 
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase.from("domains").insert({

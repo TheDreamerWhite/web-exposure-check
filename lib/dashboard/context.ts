@@ -17,7 +17,12 @@ export type DashboardContext = {
   };
 };
 
-export async function requireDashboardContext(): Promise<DashboardContext> {
+export type OrganizationDashboardContext = DashboardContext & {
+  organization: Organization;
+  membership: OrganizationMember;
+};
+
+export async function getCurrentUser() {
   if (!isSupabaseConfigured()) {
     redirect("/login?message=supabase-config-required");
   }
@@ -32,13 +37,53 @@ export async function requireDashboardContext(): Promise<DashboardContext> {
     redirect("/login");
   }
 
+  return {
+    supabase,
+    user,
+  };
+}
+
+export async function getCurrentOrganization(userId: string) {
+  const supabase = await createSupabaseServerClient();
   const { data: membership } = await supabase
     .from("organization_members")
     .select("*")
-    .eq("user_id", user.id)
+    .eq("user_id", userId)
     .order("created_at", { ascending: true })
     .limit(1)
     .maybeSingle();
+
+  if (!membership) {
+    const { data: ownedOrganization } = await supabase
+      .from("organizations")
+      .select("*")
+      .eq("owner_user_id", userId)
+      .order("created_at", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+
+    if (!ownedOrganization) {
+      return {
+        membership: null,
+        organization: null,
+      };
+    }
+
+    const { data: repairedMembership } = await supabase
+      .from("organization_members")
+      .insert({
+        organization_id: ownedOrganization.id,
+        user_id: userId,
+        role: "owner",
+      })
+      .select("*")
+      .single();
+
+    return {
+      membership: repairedMembership,
+      organization: repairedMembership ? ownedOrganization : null,
+    };
+  }
 
   const { data: organization } = membership
     ? await supabase
@@ -49,11 +94,35 @@ export async function requireDashboardContext(): Promise<DashboardContext> {
     : { data: null };
 
   return {
+    membership,
+    organization,
+  };
+}
+
+export async function requireDashboardContext(): Promise<DashboardContext> {
+  const { user } = await getCurrentUser();
+  const { membership, organization } = await getCurrentOrganization(user.id);
+
+  return {
     organization,
     membership,
     user: {
       id: user.id,
       email: user.email,
     },
+  };
+}
+
+export async function requireOrganizationContext(): Promise<OrganizationDashboardContext> {
+  const context = await requireDashboardContext();
+
+  if (!context.organization || !context.membership) {
+    redirect("/dashboard/onboarding");
+  }
+
+  return {
+    ...context,
+    organization: context.organization,
+    membership: context.membership,
   };
 }

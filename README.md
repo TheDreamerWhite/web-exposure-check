@@ -62,8 +62,9 @@ SUPABASE_SECRET_KEY=
 `SUPABASE_SECRET_KEY` must stay server-side only. Do not commit `.env.local`.
 
 If email confirmation is enabled in Supabase Auth, signup may show a confirmation
-message instead of immediately creating the organization. Confirm the email, sign
-in, and repair/create the organization manually if needed during this MVP.
+message instead of immediately creating the organization. Confirm the email,
+sign in, and the dashboard will route you to `/dashboard/onboarding` to create
+the workspace.
 
 ## Environment Variables
 
@@ -199,7 +200,7 @@ See [docs/roadmap.md](docs/roadmap.md),
 ## Limitations
 
 - Supabase must be configured before auth and protected dashboard workflows work.
-- Signup organization creation depends on immediate Supabase session availability.
+- Users who sign in without an organization are routed to dashboard onboarding.
 - Domain verification is not implemented yet.
 - Scheduled scanning, email reports, AI analysis, and Stripe billing are not
   implemented yet.

@@ -1,7 +1,7 @@
-import { requireDashboardContext } from "@/lib/dashboard/context";
+import { requireOrganizationContext } from "@/lib/dashboard/context";
 
 export default async function SettingsPage() {
-  const { organization, user } = await requireDashboardContext();
+  const { organization, user } = await requireOrganizationContext();
 
   return (
     <div className="space-y-6">

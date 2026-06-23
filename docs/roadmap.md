@@ -42,6 +42,14 @@ Status: current.
 - Add Supabase RLS policies so organization data is member-scoped
 - Keep the public scanner available without an account
 
+### MVP 2.1.1: Organization Onboarding Repair
+
+- Route signed-in users without an organization to `/dashboard/onboarding`
+- Create missing organization and owner membership rows from the dashboard
+- Repair partial signup states where an owner organization exists without a
+  membership row
+- Keep domain management blocked until workspace setup is complete
+
 ## MVP 2.2: Domain Verification
 
 - Add DNS TXT or file-based domain verification
