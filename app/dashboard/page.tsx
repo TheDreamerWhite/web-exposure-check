@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import type { MonitoredDomain } from "./components/domain-storage";
 import {
   formatFrequency,
   formatStoredDate,
@@ -8,7 +9,7 @@ import {
 import { RiskPill } from "./components/risk-pill";
 import { useStoredDomains } from "./components/use-stored-domains";
 
-function countRisk(domains: ReturnType<typeof useStoredDomains>["domains"], risk: string) {
+function countRisk(domains: MonitoredDomain[], risk: string) {
   return domains.filter((domain) =>
     domain.latestRiskLevel?.toLowerCase().includes(risk)
   ).length;
@@ -34,26 +35,29 @@ export default function DashboardPage() {
               Dashboard
             </p>
             <h1 className="mt-3 text-3xl font-bold tracking-normal text-slate-950 sm:text-4xl">
-              Welcome to your monitoring workspace
+              Security Monitoring Dashboard
             </h1>
             <p className="mt-4 max-w-3xl text-sm leading-6 text-slate-600">
-              MVP 2.0 introduces the SaaS foundation for authorized domain
-              monitoring. For now, domain data is stored locally in this browser
-              until authentication and database persistence are added.
+              Monitor your authorized domains, review exposure trends, and
+              prepare automated security reports.
+            </p>
+            <p className="mt-2 max-w-3xl text-xs leading-5 text-slate-500">
+              MVP 2.0 uses local browser data only. Authentication, persistence,
+              scheduled scans, reports, and billing are planned future phases.
             </p>
           </div>
           <Link
             href="/dashboard/domains/new"
             className="inline-flex items-center justify-center rounded-md bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-teal-800 focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2"
           >
-            Add a domain
+            Add your first domain
           </Link>
         </div>
       </section>
 
       <section className="grid gap-4 md:grid-cols-4">
         <article className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-sm font-medium text-slate-500">Total domains</p>
+          <p className="text-sm font-medium text-slate-500">Monitored domains</p>
           <p className="mt-4 text-3xl font-black text-slate-950">
             {loaded ? domains.length : "-"}
           </p>
@@ -69,17 +73,17 @@ export default function DashboardPage() {
         </article>
 
         <article className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-sm font-medium text-slate-500">Risk summary</p>
+          <p className="text-sm font-medium text-slate-500">Open findings</p>
           <p className="mt-4 text-3xl font-black text-slate-950">
-            {countRisk(domains, "high")}
+            0
           </p>
-          <p className="mt-2 text-sm text-slate-600">High-risk domains recorded.</p>
+          <p className="mt-2 text-sm text-slate-600">Finding storage arrives later.</p>
         </article>
 
         <article className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-sm font-medium text-slate-500">Subscription</p>
-          <p className="mt-4 text-lg font-black text-slate-950">Free preview</p>
-          <p className="mt-2 text-sm text-slate-600">Billing arrives in MVP 2.5.</p>
+          <p className="text-sm font-medium text-slate-500">Report status</p>
+          <p className="mt-4 text-lg font-black text-slate-950">Not connected</p>
+          <p className="mt-2 text-sm text-slate-600">Email reports arrive later.</p>
         </article>
       </section>
 
@@ -118,7 +122,8 @@ export default function DashboardPage() {
                     <p className="font-semibold text-slate-950">{domain.name}</p>
                     <p className="mt-1 text-xs text-slate-500">
                       Frequency: {formatFrequency(domain.frequency)} | Added{" "}
-                      {formatStoredDate(domain.createdAt)}
+                      {formatStoredDate(domain.createdAt)} | Last scan:{" "}
+                      {formatStoredDate(domain.lastScannedAt)}
                     </p>
                   </div>
                   <div className="flex items-center gap-3 sm:justify-end">
@@ -155,11 +160,20 @@ export default function DashboardPage() {
           </section>
 
           <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+            <h2 className="text-lg font-bold text-slate-950">Recent activity</h2>
+            <p className="mt-3 text-sm leading-6 text-slate-600">
+              Recent activity will show saved scans, report deliveries, finding
+              changes, and subscription events after database persistence is
+              added.
+            </p>
+          </section>
+
+          <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
             <h2 className="text-lg font-bold text-slate-950">Authorized use</h2>
             <p className="mt-3 text-sm leading-6 text-slate-600">
-              Users should only add domains they own or are authorized to monitor.
-              This platform performs basic external exposure checks, not intrusive
-              penetration testing.
+              Users should only monitor domains they own or are authorized to
+              assess. Automated scanning must be lawful, authorized, and
+              rate-limited.
             </p>
           </section>
         </aside>

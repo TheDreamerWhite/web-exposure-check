@@ -1,10 +1,12 @@
 export type MonitoringFrequency = "manual" | "weekly" | "monthly";
+export type DomainStatus = "active" | "paused";
 
 export type MonitoredDomain = {
   id: string;
   name: string;
   frequency: MonitoringFrequency;
   authorizationConfirmed: boolean;
+  status: DomainStatus;
   createdAt: string;
   latestScore: number | null;
   latestRiskLevel: string | null;
@@ -24,6 +26,7 @@ const validFrequencies = new Set<MonitoringFrequency>([
   "weekly",
   "monthly",
 ]);
+const validStatuses = new Set<DomainStatus>(["active", "paused"]);
 
 export function normalizeDomainName(value: string) {
   const rawValue = value.trim();
@@ -70,7 +73,12 @@ export function isValidDomainName(domain: string) {
 export function formatFrequency(frequency: MonitoringFrequency) {
   if (frequency === "weekly") return "Weekly";
   if (frequency === "monthly") return "Monthly";
-  return "Manual";
+  return "Manual only";
+}
+
+export function formatDomainStatus(status: DomainStatus) {
+  if (status === "paused") return "Paused";
+  return "Active";
 }
 
 export function formatStoredDate(value: string | null) {
@@ -106,6 +114,9 @@ export function readStoredDomains(): MonitoredDomain[] {
           ? (domain.frequency as MonitoringFrequency)
           : "manual",
         authorizationConfirmed: Boolean(domain.authorizationConfirmed),
+        status: validStatuses.has(domain.status as DomainStatus)
+          ? (domain.status as DomainStatus)
+          : "active",
         createdAt: domain.createdAt
           ? String(domain.createdAt)
           : new Date().toISOString(),
@@ -139,6 +150,10 @@ export function buildDomainId(domain: string) {
 export function createStoredDomain(input: NewDomainInput) {
   const name = normalizeDomainName(input.name);
 
+  if (!name) {
+    throw new Error("Domain cannot be empty.");
+  }
+
   if (!isValidDomainName(name)) {
     throw new Error("Enter a valid public domain, such as example.com.");
   }
@@ -162,6 +177,7 @@ export function createStoredDomain(input: NewDomainInput) {
     name,
     frequency: input.frequency,
     authorizationConfirmed: input.authorizationConfirmed,
+    status: "active",
     createdAt: new Date().toISOString(),
     latestScore: null,
     latestRiskLevel: null,

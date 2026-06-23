@@ -2,10 +2,12 @@
 
 import Link from "next/link";
 import {
+  formatDomainStatus,
   formatFrequency,
   formatStoredDate,
 } from "../../components/domain-storage";
 import { RiskPill } from "../../components/risk-pill";
+import { StatusPill } from "../../components/status-pill";
 import { useStoredDomains } from "../../components/use-stored-domains";
 
 type DomainDetailClientProps = {
@@ -93,11 +95,11 @@ export function DomainDetailClient({ domainId }: DomainDetailClientProps) {
         </article>
 
         <article className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-sm font-medium text-slate-500">Added</p>
+          <p className="text-sm font-medium text-slate-500">Latest scan</p>
           <p className="mt-4 text-xl font-black text-slate-950">
-            {formatStoredDate(domain.createdAt)}
+            {formatStoredDate(domain.lastScannedAt)}
           </p>
-          <p className="mt-2 text-sm text-slate-600">Stored in this browser.</p>
+          <p className="mt-2 text-sm text-slate-600">Persistent history arrives later.</p>
         </article>
       </section>
 
@@ -110,24 +112,50 @@ export function DomainDetailClient({ domainId }: DomainDetailClientProps) {
             to `scan_results` and linked to this domain record.
           </p>
 
-          <div className="mt-5 rounded-lg border border-dashed border-slate-300 bg-slate-50 p-5">
-            <h3 className="font-semibold text-slate-950">Future report history</h3>
-            <p className="mt-2 text-sm leading-6 text-slate-600">
-              Saved scans, findings, report exports, and AI-assisted risk
-              analysis will appear here after database persistence is added.
-            </p>
+          <div className="mt-5 grid gap-4">
+            <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-5">
+              <h3 className="font-semibold text-slate-950">Scan history</h3>
+              <p className="mt-2 text-sm leading-6 text-slate-600">
+                Persistent scan history will be added in a future database phase.
+                Manual scans currently run through the public scanner.
+              </p>
+            </div>
+            <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-5">
+              <h3 className="font-semibold text-slate-950">Findings</h3>
+              <p className="mt-2 text-sm leading-6 text-slate-600">
+                Findings will store normalized issues such as missing DMARC,
+                weak headers, and TLS warnings after scan results are persisted.
+              </p>
+            </div>
+            <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-5">
+              <h3 className="font-semibold text-slate-950">Recommended actions</h3>
+              <p className="mt-2 text-sm leading-6 text-slate-600">
+                Recommended actions will combine scan findings with AI-assisted
+                remediation suggestions in a later MVP.
+              </p>
+            </div>
           </div>
         </div>
 
         <aside className="space-y-4">
           <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
             <h2 className="text-lg font-bold text-slate-950">Authorization</h2>
-            <p className="mt-3 text-sm leading-6 text-slate-600">
+            <p className="mt-2 text-sm leading-6 text-slate-600">
               Authorization confirmation:{" "}
               <span className="font-semibold text-slate-950">
                 {domain.authorizationConfirmed ? "Confirmed" : "Not confirmed"}
               </span>
             </p>
+          </section>
+
+          <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+            <h2 className="text-lg font-bold text-slate-950">Status</h2>
+            <div className="mt-3 flex items-center gap-3">
+              <StatusPill status={domain.status} />
+              <span className="text-sm text-slate-600">
+                {formatDomainStatus(domain.status)}
+              </span>
+            </div>
           </section>
 
           <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">

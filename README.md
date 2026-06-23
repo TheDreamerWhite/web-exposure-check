@@ -1,64 +1,67 @@
 # Web Exposure Check
 
 Web Exposure Check is evolving into a continuous web exposure monitoring SaaS
-for small and medium-sized businesses. Today it provides a public scanner for
-basic website exposure signals. The product direction is to support accounts,
-authorized domain inventories, scheduled scans, reports, AI-assisted risk
-analysis, remediation guidance, and paid subscriptions.
+for small and medium-sized businesses. The long-term product goal is to help
+SMEs create an account, add authorized business domains, run manual and
+scheduled scans, store historical results, receive reports, get AI-assisted risk
+analysis, and pay for monitoring plans based on domain count and scan/report
+frequency.
 
-The current scanner checks a domain for HTTPS behavior, TLS certificate health,
-email authentication records, and common browser security headers, then returns
-a simple score, risk level, and suggested fixes.
+The current public scanner checks a domain for HTTPS behavior, TLS certificate
+health, email authentication records, and common browser security headers, then
+returns a simple score, risk level, and suggested fixes.
 
 This is a first-pass visibility tool. It is not a vulnerability scanner,
-penetration test, or replacement for a professional security assessment.
+intrusive penetration test, or replacement for a professional security
+assessment.
 
-## Features
+## Current Features
 
-- Public website scan dashboard at `/scan`
+- Public website and scanner routes
+- Manual scan dashboard at `/scan`
 - Score display, risk explanation, check cards, and suggested fixes
 - Local browser scan history with copy report and JSON export
-- SaaS foundation dashboard at `/dashboard`
-- Local authorized-domain inventory at `/dashboard/domains`
-- Domain detail placeholder with a path back to the public scanner
 - Checks for SSL/TLS, HTTPS redirect, SPF, DMARC, HSTS, CSP, and frame protection
 - JSON API at `/api/scan`
-- Static public pages for features, about, privacy, and terms
-- Responsive layout for desktop and mobile
+- Health endpoint at `/api/health`
+- SaaS dashboard shell at `/dashboard`
+- LocalStorage-backed domain inventory for MVP 2.0 demonstration
+- Reports, settings, and billing placeholder pages
 
-## MVP 2.0 SaaS Foundation
+## MVP 2.0 SaaS Architecture Foundation
 
-MVP 2.0 adds the application structure for the future paid platform without
-introducing a database or authentication dependency too early.
+MVP 2.0 adds the application structure for a future paid platform without
+connecting real external services yet.
 
-- Dashboard overview with domain count, latest scan placeholders, risk summary,
-  add-domain CTA, and subscription placeholder
+- Dashboard overview with monitored-domain, latest-scan, open-finding, and
+  report-status cards
 - Domain management routes:
   - `/dashboard/domains`
   - `/dashboard/domains/new`
   - `/dashboard/domains/[domainId]`
-- LocalStorage-backed domain records for temporary local testing
+- Reports route at `/dashboard/reports`
+- Settings route at `/dashboard/settings`
+- Billing route at `/dashboard/billing`
 - Authorization confirmation before adding a monitored domain
-- Safety copy for lawful, authorized use
-- Future integration path from domain detail pages to `/scan?domain=example.com`
-- Health endpoint at `/api/health`
+- Safety copy for lawful, authorized, rate-limited use
+- Domain detail Run Scan link to `/scan?domain=example.com`
+- Documentation for database schema, SaaS architecture, and roadmap
 
-## SaaS Roadmap
+## Future SaaS Roadmap
 
-Planned product milestones:
+- MVP 2.1: authentication and database persistence
+- MVP 2.2: domain verification
+- MVP 2.3: scheduled scanning
+- MVP 2.4: email reports
+- MVP 2.5: AI risk analyst
+- MVP 2.6: subscription billing
+- MVP 2.7: team and organization management
 
-- Authentication and user accounts
-- Organization workspaces and role-based access
-- Database persistence for domains, scan results, findings, reports, and billing
-- Scheduled weekly or monthly scans
-- Email security reports and alerting
-- AI-assisted risk analysis and remediation suggestions
-- Subscription billing for paid plans
+See [docs/roadmap.md](docs/roadmap.md),
+[docs/database-schema.md](docs/database-schema.md), and
+[docs/saas-architecture.md](docs/saas-architecture.md).
 
-See [docs/roadmap.md](docs/roadmap.md) and
-[docs/database-schema.md](docs/database-schema.md) for implementation planning.
-
-## Local Setup
+## Local Development
 
 Install dependencies:
 
@@ -87,8 +90,7 @@ Create a production build:
 npm run build
 ```
 
-On Windows PowerShell, this equivalent command avoids `npm.ps1` execution-policy
-blocks:
+Windows PowerShell equivalent:
 
 ```bash
 npm.cmd run build
@@ -100,7 +102,23 @@ Run the production server after building:
 npm run start
 ```
 
-## Deployment
+## Environment Variables
+
+MVP 2.0 does not require real external service keys. Placeholder names are listed
+in `.env.example` for future phases:
+
+- `NEXT_PUBLIC_APP_URL`
+- `DATABASE_URL`
+- `AUTH_SECRET`
+- `RESEND_API_KEY`
+- `OPENAI_API_KEY`
+- `STRIPE_SECRET_KEY`
+- `STRIPE_WEBHOOK_SECRET`
+- `CRON_SECRET`
+
+Do not commit real secrets.
+
+## Deployment Notes
 
 Vercel can deploy this project from a connected GitHub repository. Before a
 future deployment, verify the project locally with:
@@ -112,9 +130,6 @@ npm.cmd run build
 Use `npm.cmd` on Windows if PowerShell blocks `npm.ps1`. The app uses Next.js
 App Router routes, including the serverless-compatible scan handler at
 `app/api/scan/route.ts`.
-
-Deploy only code you are authorized to publish, and use the scanner only for
-domains you own or are explicitly authorized to assess.
 
 ## API Usage
 
@@ -162,23 +177,21 @@ Invalid requests return JSON errors:
 
 ## Limitations
 
+- MVP 2.0 dashboard domain data is stored in localStorage.
+- Real authentication, database persistence, email, AI, cron, and billing are
+  not implemented yet.
 - Checks are limited to public DNS, TLS, redirect, and HTTP header signals.
-- MVP 2.0 dashboard domain data is stored in localStorage until database
-  persistence is added.
-- The dashboard is a semi-protected structure only; real authentication is not
-  implemented yet.
 - Results can be affected by DNS propagation, CDN behavior, redirects, bot
   blocking, and temporary network failures.
 - A healthy score does not prove that a website is secure.
 - A poor score does not prove active compromise.
-- The tool does not authenticate, crawl private pages, run exploit payloads, or
-  inspect application source code.
 
-## Ethical Disclaimer
+## Ethical Usage Warning
 
 Use this project only on domains you own, administer, or have explicit
-permission to test. Do not use it for harassment, unauthorized reconnaissance,
-abuse of third-party services, or attempts to bypass controls.
+permission to test. Automated scanning must be lawful, authorized, rate-limited,
+and scoped to approved assets. Do not use it for harassment, unauthorized
+reconnaissance, abuse of third-party services, or attempts to bypass controls.
 
 For production security decisions, validate findings with qualified security
 professionals and the owners of the systems being reviewed.

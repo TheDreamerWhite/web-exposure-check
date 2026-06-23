@@ -2,10 +2,12 @@
 
 import Link from "next/link";
 import {
+  formatDomainStatus,
   formatFrequency,
   formatStoredDate,
 } from "../components/domain-storage";
 import { RiskPill } from "../components/risk-pill";
+import { StatusPill } from "../components/status-pill";
 import { useStoredDomains } from "../components/use-stored-domains";
 
 export default function DomainsPage() {
@@ -70,6 +72,9 @@ export default function DomainsPage() {
                 className="grid gap-4 rounded-lg border border-slate-200 p-4 md:grid-cols-[minmax(0,1fr)_auto]"
               >
                 <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.16em] text-slate-500">
+                    Domain name
+                  </p>
                   <Link
                     href={`/dashboard/domains/${domain.id}`}
                     className="text-lg font-bold text-slate-950 transition hover:text-teal-800"
@@ -77,20 +82,29 @@ export default function DomainsPage() {
                     {domain.name}
                   </Link>
                   <p className="mt-2 text-sm leading-6 text-slate-600">
-                    Frequency: {formatFrequency(domain.frequency)} | Added{" "}
-                    {formatStoredDate(domain.createdAt)}
+                    Monitoring frequency: {formatFrequency(domain.frequency)} |
+                    Last scanned date: {formatStoredDate(domain.lastScannedAt)}
                   </p>
                   <p className="mt-1 text-xs font-medium text-slate-500">
                     Authorization confirmed:{" "}
-                    {domain.authorizationConfirmed ? "Yes" : "No"}
+                    {domain.authorizationConfirmed ? "Yes" : "No"} | Status:{" "}
+                    {formatDomainStatus(domain.status)}
                   </p>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-3 md:justify-end">
                   <span className="text-sm font-black text-slate-950">
+                    Latest score:{" "}
                     {domain.latestScore === null ? "No score" : `${domain.latestScore}/100`}
                   </span>
                   <RiskPill riskLevel={domain.latestRiskLevel} />
+                  <StatusPill status={domain.status} />
+                  <Link
+                    href={`/dashboard/domains/${domain.id}`}
+                    className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-950 transition hover:border-teal-700 hover:text-teal-800"
+                  >
+                    Details
+                  </Link>
                   <Link
                     href={`/scan?domain=${encodeURIComponent(domain.name)}`}
                     className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-950 transition hover:border-teal-700 hover:text-teal-800"

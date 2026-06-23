@@ -10,7 +10,9 @@ export const metadata: Metadata = {
 const dashboardNav = [
   { href: "/dashboard", label: "Overview" },
   { href: "/dashboard/domains", label: "Domains" },
-  { href: "/dashboard/domains/new", label: "Add domain" },
+  { href: "/dashboard/reports", label: "Reports" },
+  { href: "/dashboard/settings", label: "Settings" },
+  { href: "/dashboard/billing", label: "Billing" },
 ];
 
 export default function DashboardLayout({
@@ -24,10 +26,10 @@ export default function DashboardLayout({
         <aside className="h-fit rounded-lg border border-slate-200 bg-white p-4 shadow-sm lg:sticky lg:top-24">
           <div className="rounded-lg border border-teal-200 bg-teal-50 p-4">
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-teal-800">
-              Workspace
+              Web Exposure Check
             </p>
             <p className="mt-2 text-sm font-semibold text-slate-950">
-              SaaS foundation preview
+              Monitoring workspace
             </p>
             <p className="mt-2 text-xs leading-5 text-slate-600">
               Authentication and organization access controls will gate this
@@ -45,6 +47,12 @@ export default function DashboardLayout({
                 {item.label}
               </Link>
             ))}
+            <Link
+              href="/"
+              className="mt-2 rounded-md border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 hover:text-slate-950"
+            >
+              Back to public site
+            </Link>
           </nav>
 
           <div className="mt-5 rounded-lg border border-slate-200 bg-slate-50 p-4">

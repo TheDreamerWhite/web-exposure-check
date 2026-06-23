@@ -20,13 +20,13 @@ export default function NewDomainPage() {
     setError("");
 
     try {
-      const domain = createStoredDomain({
+      createStoredDomain({
         name: domainName,
         frequency,
         authorizationConfirmed,
       });
 
-      router.push(`/dashboard/domains/${domain.id}`);
+      router.push("/dashboard/domains");
     } catch (domainError) {
       setError(
         domainError instanceof Error
@@ -87,9 +87,9 @@ export default function NewDomainPage() {
               }
               className="mt-2 min-h-12 w-full rounded-md border border-slate-300 bg-white px-4 text-base text-slate-950 outline-none transition focus:border-teal-700 focus:ring-2 focus:ring-teal-100"
             >
-              <option value="manual">Manual</option>
-              <option value="weekly">Weekly placeholder</option>
-              <option value="monthly">Monthly placeholder</option>
+              <option value="manual">Manual only</option>
+              <option value="weekly">Weekly</option>
+              <option value="monthly">Monthly</option>
             </select>
             <p className="mt-2 text-xs leading-5 text-slate-500">
               Scheduled scans are not active yet. Frequency is stored so the
@@ -123,7 +123,7 @@ export default function NewDomainPage() {
               type="submit"
               className="rounded-md bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-teal-800 focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2"
             >
-              Save domain
+              Add Domain
             </button>
             <Link
               href="/dashboard/domains"

@@ -278,6 +278,27 @@ function parseHistory(value: string | null): HistoryItem[] {
   }
 }
 
+function copyTextWithFallback(text: string) {
+  const textarea = document.createElement("textarea");
+
+  textarea.value = text;
+  textarea.setAttribute("readonly", "true");
+  textarea.style.left = "0";
+  textarea.style.opacity = "0";
+  textarea.style.position = "fixed";
+  textarea.style.top = "0";
+  document.body.appendChild(textarea);
+  textarea.focus();
+  textarea.select();
+
+  const copied = document.execCommand("copy");
+  textarea.remove();
+
+  if (!copied) {
+    throw new Error("Legacy copy failed.");
+  }
+}
+
 export default function ScanPage() {
   const [domain, setDomain] = useState("");
   const [result, setResult] = useState<ScanResult | null>(null);
@@ -285,6 +306,7 @@ export default function ScanPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [copyStatus, setCopyStatus] = useState("");
+  const [exportStatus, setExportStatus] = useState("");
   const [scanTakingLonger, setScanTakingLonger] = useState(false);
 
   useEffect(() => {
@@ -352,6 +374,7 @@ export default function ScanPage() {
 
     setError("");
     setCopyStatus("");
+    setExportStatus("");
     setResult(null);
     setScanTakingLonger(false);
 
@@ -413,6 +436,7 @@ export default function ScanPage() {
   function loadHistoryItem(item: HistoryItem) {
     setError("");
     setCopyStatus("");
+    setExportStatus("");
     setDomain(item.domain);
 
     if (Object.keys(item.checks).length > 0) {
@@ -426,11 +450,22 @@ export default function ScanPage() {
   async function copyReport() {
     if (!result) return;
 
+    const reportText = buildTextReport(result);
+
     try {
-      await navigator.clipboard.writeText(buildTextReport(result));
+      if (!navigator.clipboard?.writeText) {
+        throw new Error("Clipboard API unavailable.");
+      }
+
+      await navigator.clipboard.writeText(reportText);
       setCopyStatus("Report copied.");
     } catch {
-      setCopyStatus("Copy failed. Your browser may block clipboard access.");
+      try {
+        copyTextWithFallback(reportText);
+        setCopyStatus("Report copied.");
+      } catch {
+        setCopyStatus("Copy failed. Your browser may block clipboard access.");
+      }
     }
   }
 
@@ -447,21 +482,26 @@ export default function ScanPage() {
       suggestedFixes: problemEntries.map(([key]) => getCheckInfo(key).fix),
     };
 
-    const url = URL.createObjectURL(
-      new Blob([JSON.stringify(report, null, 2)], {
-        type: "application/json",
-      })
-    );
-    const link = document.createElement("a");
+    try {
+      const url = URL.createObjectURL(
+        new Blob([JSON.stringify(report, null, 2)], {
+          type: "application/json",
+        })
+      );
+      const link = document.createElement("a");
 
-    link.href = url;
-    link.download = `${result.domain}-web-exposure-report.json`;
-    link.style.display = "none";
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
+      link.href = url;
+      link.download = `${result.domain}-web-exposure-report.json`;
+      link.style.display = "none";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
 
-    window.setTimeout(() => URL.revokeObjectURL(url), 100);
+      setExportStatus("JSON export started.");
+      window.setTimeout(() => URL.revokeObjectURL(url), 100);
+    } catch {
+      setExportStatus("JSON export could not start. Try copying the report instead.");
+    }
   }
 
   return (
@@ -647,6 +687,11 @@ export default function ScanPage() {
                   {copyStatus && (
                     <p className="mt-3 text-sm font-medium text-teal-800" aria-live="polite">
                       {copyStatus}
+                    </p>
+                  )}
+                  {exportStatus && (
+                    <p className="mt-2 text-sm font-medium text-teal-800" aria-live="polite">
+                      {exportStatus}
                     </p>
                   )}
                 </section>
