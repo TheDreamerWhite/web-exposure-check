@@ -1,3 +1,5 @@
+import { requireDashboardContext } from "@/lib/dashboard/context";
+
 const plans = [
   {
     name: "Free / Trial",
@@ -24,7 +26,9 @@ const plans = [
   },
 ];
 
-export default function BillingPage() {
+export default async function BillingPage() {
+  const { organization } = await requireDashboardContext();
+
   return (
     <div className="space-y-6">
       <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
@@ -38,6 +42,11 @@ export default function BillingPage() {
           Billing integration will be added in a future phase. Pricing below is
           a product-structure placeholder for domain and report limits.
         </p>
+        {organization && (
+          <p className="mt-2 text-xs font-medium text-slate-500">
+            Workspace: {organization.name}
+          </p>
+        )}
       </section>
 
       <section className="grid gap-4 lg:grid-cols-3">

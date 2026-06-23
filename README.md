@@ -1,15 +1,15 @@
 # Web Exposure Check
 
 Web Exposure Check is evolving into a continuous web exposure monitoring SaaS
-for small and medium-sized businesses. The long-term product goal is to help
-SMEs create an account, add authorized business domains, run manual and
-scheduled scans, store historical results, receive reports, get AI-assisted risk
+for small and medium-sized businesses. The product goal is to help SMEs create
+an account, add authorized business domains, run manual and scheduled scans,
+store historical results, receive automated reports, get AI-assisted risk
 analysis, and pay for monitoring plans based on domain count and scan/report
 frequency.
 
-The current public scanner checks a domain for HTTPS behavior, TLS certificate
-health, email authentication records, and common browser security headers, then
-returns a simple score, risk level, and suggested fixes.
+The public scanner checks a domain for HTTPS behavior, TLS certificate health,
+email authentication records, and common browser security headers, then returns a
+simple score, risk level, and suggested fixes.
 
 This is a first-pass visibility tool. It is not a vulnerability scanner,
 intrusive penetration test, or replacement for a professional security
@@ -17,49 +17,70 @@ assessment.
 
 ## Current Features
 
-- Public website and scanner routes
-- Manual scan dashboard at `/scan`
-- Score display, risk explanation, check cards, and suggested fixes
-- Local browser scan history with copy report and JSON export
-- Checks for SSL/TLS, HTTPS redirect, SPF, DMARC, HSTS, CSP, and frame protection
-- JSON API at `/api/scan`
+- Public website and anonymous scanner at `/scan`
+- JSON scan API at `/api/scan`
 - Health endpoint at `/api/health`
-- SaaS dashboard shell at `/dashboard`
-- LocalStorage-backed domain inventory for MVP 2.0 demonstration
+- Supabase Auth login and signup pages
+- Protected SaaS dashboard under `/dashboard`
+- Supabase-backed organizations, memberships, domains, scan results, and findings
+- Domain management with authorization confirmation
+- Authenticated dashboard scan route that persists scan results and findings
 - Reports, settings, and billing placeholder pages
+- Documentation for schema, architecture, roadmap, and Supabase setup
 
-## MVP 2.0 SaaS Architecture Foundation
+## MVP 2.1 Supabase Persistence
 
-MVP 2.0 adds the application structure for a future paid platform without
-connecting real external services yet.
+MVP 2.1 replaces the dashboard's localStorage-only data model with Supabase:
 
-- Dashboard overview with monitored-domain, latest-scan, open-finding, and
-  report-status cards
-- Domain management routes:
-  - `/dashboard/domains`
-  - `/dashboard/domains/new`
-  - `/dashboard/domains/[domainId]`
-- Reports route at `/dashboard/reports`
-- Settings route at `/dashboard/settings`
-- Billing route at `/dashboard/billing`
-- Authorization confirmation before adding a monitored domain
-- Safety copy for lawful, authorized, rate-limited use
-- Domain detail Run Scan link to `/scan?domain=example.com`
-- Documentation for database schema, SaaS architecture, and roadmap
+- `@supabase/supabase-js` and `@supabase/ssr`
+- Supabase Auth for account creation and sign-in
+- Supabase Postgres tables for organizations, members, domains, scan results,
+  and findings
+- Row Level Security policies that scope dashboard data to organization members
+- Shared scan engine used by public `/api/scan` and dashboard scan persistence
+- Protected dashboard routes using Next.js App Router and `proxy.ts`
 
-## Future SaaS Roadmap
+## Supabase Setup
 
-- MVP 2.1: authentication and database persistence
-- MVP 2.2: domain verification
-- MVP 2.3: scheduled scanning
-- MVP 2.4: email reports
-- MVP 2.5: AI risk analyst
-- MVP 2.6: subscription billing
-- MVP 2.7: team and organization management
+1. Create a Supabase project.
+2. In the Supabase SQL editor, run:
 
-See [docs/roadmap.md](docs/roadmap.md),
-[docs/database-schema.md](docs/database-schema.md), and
-[docs/saas-architecture.md](docs/saas-architecture.md).
+```sql
+-- paste the contents of supabase/migrations/001_saas_foundation.sql
+```
+
+3. Copy `.env.example` to `.env.local`.
+4. Fill in the Supabase values:
+
+```bash
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
+SUPABASE_SECRET_KEY=
+```
+
+`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` may be used by browser/client code.
+`SUPABASE_SECRET_KEY` must stay server-side only. Do not commit `.env.local`.
+
+If email confirmation is enabled in Supabase Auth, signup may show a confirmation
+message instead of immediately creating the organization. Confirm the email, sign
+in, and repair/create the organization manually if needed during this MVP.
+
+## Environment Variables
+
+Placeholders are listed in `.env.example`:
+
+- `NEXT_PUBLIC_APP_URL`
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+- `SUPABASE_SECRET_KEY`
+- `RESEND_API_KEY`
+- `OPENAI_API_KEY`
+- `STRIPE_SECRET_KEY`
+- `STRIPE_WEBHOOK_SECRET`
+- `CRON_SECRET`
+
+Only the Supabase public URL/key are intended for client-side use. All service
+keys must remain server-only.
 
 ## Local Development
 
@@ -87,49 +108,14 @@ npm.cmd run dev
 Create a production build:
 
 ```bash
-npm run build
-```
-
-Windows PowerShell equivalent:
-
-```bash
 npm.cmd run build
 ```
 
 Run the production server after building:
 
 ```bash
-npm run start
+npm.cmd run start
 ```
-
-## Environment Variables
-
-MVP 2.0 does not require real external service keys. Placeholder names are listed
-in `.env.example` for future phases:
-
-- `NEXT_PUBLIC_APP_URL`
-- `DATABASE_URL`
-- `AUTH_SECRET`
-- `RESEND_API_KEY`
-- `OPENAI_API_KEY`
-- `STRIPE_SECRET_KEY`
-- `STRIPE_WEBHOOK_SECRET`
-- `CRON_SECRET`
-
-Do not commit real secrets.
-
-## Deployment Notes
-
-Vercel can deploy this project from a connected GitHub repository. Before a
-future deployment, verify the project locally with:
-
-```bash
-npm.cmd run build
-```
-
-Use `npm.cmd` on Windows if PowerShell blocks `npm.ps1`. The app uses Next.js
-App Router routes, including the serverless-compatible scan handler at
-`app/api/scan/route.ts`.
 
 ## API Usage
 
@@ -148,7 +134,7 @@ Request body:
 }
 ```
 
-Successful response:
+Successful response shape remains compatible:
 
 ```json
 {
@@ -175,16 +161,52 @@ Invalid requests return JSON errors:
 }
 ```
 
+Authenticated dashboard scans use:
+
+```text
+POST /api/dashboard/domains/[domainId]/scan
+```
+
+That route requires a signed-in user who is a member of the domain's
+organization. It persists `scan_results` and non-OK `findings`.
+
+## Deployment Notes
+
+Vercel can deploy this project from a connected GitHub repository. Before a
+future deployment, verify locally with:
+
+```bash
+npm.cmd run lint
+npm.cmd run build
+```
+
+Set Supabase environment variables in Vercel project settings. Do not expose
+`SUPABASE_SECRET_KEY` to browser code.
+
+## Roadmap
+
+- MVP 2.2: domain verification
+- MVP 2.3: scheduled scanning
+- MVP 2.4: email reports
+- MVP 2.5: AI risk analyst
+- MVP 2.6: subscription billing
+- MVP 2.7: team and organization management
+
+See [docs/roadmap.md](docs/roadmap.md),
+[docs/database-schema.md](docs/database-schema.md), and
+[docs/saas-architecture.md](docs/saas-architecture.md).
+
 ## Limitations
 
-- MVP 2.0 dashboard domain data is stored in localStorage.
-- Real authentication, database persistence, email, AI, cron, and billing are
-  not implemented yet.
+- Supabase must be configured before auth and protected dashboard workflows work.
+- Signup organization creation depends on immediate Supabase session availability.
+- Domain verification is not implemented yet.
+- Scheduled scanning, email reports, AI analysis, and Stripe billing are not
+  implemented yet.
 - Checks are limited to public DNS, TLS, redirect, and HTTP header signals.
 - Results can be affected by DNS propagation, CDN behavior, redirects, bot
   blocking, and temporary network failures.
 - A healthy score does not prove that a website is secure.
-- A poor score does not prove active compromise.
 
 ## Ethical Usage Warning
 

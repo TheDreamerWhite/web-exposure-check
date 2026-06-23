@@ -1,6 +1,6 @@
-"use client";
-
 import Link from "next/link";
+import { requireDashboardContext } from "@/lib/dashboard/context";
+import { getDashboardSummary } from "@/lib/dashboard/data";
 import {
   formatDomainStatus,
   formatFrequency,
@@ -8,10 +8,14 @@ import {
 } from "../components/domain-storage";
 import { RiskPill } from "../components/risk-pill";
 import { StatusPill } from "../components/status-pill";
-import { useStoredDomains } from "../components/use-stored-domains";
 
-export default function DomainsPage() {
-  const { domains, loaded } = useStoredDomains();
+export default async function DomainsPage() {
+  const { organization } = await requireDashboardContext();
+  const summary = organization
+    ? await getDashboardSummary(organization.id)
+    : {
+        domains: [],
+      };
 
   return (
     <div className="space-y-6">
@@ -26,8 +30,8 @@ export default function DomainsPage() {
             </h1>
             <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
               Keep a list of domains your business owns or has permission to
-              monitor. Local storage is temporary until database persistence is
-              added in MVP 2.1.
+              monitor. Domain records are now persisted in Supabase and scoped
+              to your organization.
             </p>
           </div>
           <Link
@@ -47,11 +51,17 @@ export default function DomainsPage() {
         </div>
 
         <div className="mt-5 space-y-3">
-          {!loaded ? (
-            <div className="rounded-lg border border-slate-200 bg-slate-50 p-5 text-sm text-slate-600">
-              Loading domains...
+          {!organization ? (
+            <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-8 text-center">
+              <h2 className="text-xl font-bold text-slate-950">
+                Organization setup required
+              </h2>
+              <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-slate-600">
+                No organization record was found for this user. Create or repair
+                the organization in Supabase before adding domains.
+              </p>
             </div>
-          ) : domains.length === 0 ? (
+          ) : summary.domains.length === 0 ? (
             <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-8 text-center">
               <h2 className="text-xl font-bold text-slate-950">No domains yet</h2>
               <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-slate-600">
@@ -66,7 +76,7 @@ export default function DomainsPage() {
               </Link>
             </div>
           ) : (
-            domains.map((domain) => (
+            summary.domains.map((domain) => (
               <article
                 key={domain.id}
                 className="grid gap-4 rounded-lg border border-slate-200 p-4 md:grid-cols-[minmax(0,1fr)_auto]"
@@ -79,15 +89,17 @@ export default function DomainsPage() {
                     href={`/dashboard/domains/${domain.id}`}
                     className="text-lg font-bold text-slate-950 transition hover:text-teal-800"
                   >
-                    {domain.name}
+                    {domain.domain}
                   </Link>
                   <p className="mt-2 text-sm leading-6 text-slate-600">
-                    Monitoring frequency: {formatFrequency(domain.frequency)} |
-                    Last scanned date: {formatStoredDate(domain.lastScannedAt)}
+                    Monitoring frequency:{" "}
+                    {formatFrequency(domain.monitoring_frequency)} | Last
+                    scanned date:{" "}
+                    {formatStoredDate(domain.latestScan?.scanned_at || null)}
                   </p>
                   <p className="mt-1 text-xs font-medium text-slate-500">
                     Authorization confirmed:{" "}
-                    {domain.authorizationConfirmed ? "Yes" : "No"} | Status:{" "}
+                    {domain.authorization_confirmed ? "Yes" : "No"} | Status:{" "}
                     {formatDomainStatus(domain.status)}
                   </p>
                 </div>
@@ -95,9 +107,11 @@ export default function DomainsPage() {
                 <div className="flex flex-wrap items-center gap-3 md:justify-end">
                   <span className="text-sm font-black text-slate-950">
                     Latest score:{" "}
-                    {domain.latestScore === null ? "No score" : `${domain.latestScore}/100`}
+                    {domain.latestScan
+                      ? `${domain.latestScan.score}/100`
+                      : "No score"}
                   </span>
-                  <RiskPill riskLevel={domain.latestRiskLevel} />
+                  <RiskPill riskLevel={domain.latestScan?.risk_level || null} />
                   <StatusPill status={domain.status} />
                   <Link
                     href={`/dashboard/domains/${domain.id}`}
@@ -106,10 +120,10 @@ export default function DomainsPage() {
                     Details
                   </Link>
                   <Link
-                    href={`/scan?domain=${encodeURIComponent(domain.name)}`}
+                    href={`/scan?domain=${encodeURIComponent(domain.domain)}`}
                     className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-950 transition hover:border-teal-700 hover:text-teal-800"
                   >
-                    Run scan
+                    Public scan
                   </Link>
                 </div>
               </article>

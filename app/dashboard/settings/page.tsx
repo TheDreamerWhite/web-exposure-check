@@ -1,4 +1,8 @@
-export default function SettingsPage() {
+import { requireDashboardContext } from "@/lib/dashboard/context";
+
+export default async function SettingsPage() {
+  const { organization, user } = await requireDashboardContext();
+
   return (
     <div className="space-y-6">
       <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
@@ -9,8 +13,8 @@ export default function SettingsPage() {
           Organization settings
         </h1>
         <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
-          Settings are local placeholders until authentication and database
-          persistence are added.
+          Settings are placeholders until editable organization preferences are
+          added. Authentication and organization context now come from Supabase.
         </p>
       </section>
 
@@ -25,7 +29,7 @@ export default function SettingsPage() {
             </label>
             <input
               id="organizationName"
-              defaultValue="Demo workspace"
+              defaultValue={organization?.name || "Monitoring workspace"}
               className="mt-2 min-h-12 w-full rounded-md border border-slate-300 px-4 text-base text-slate-950 outline-none transition focus:border-teal-700 focus:ring-2 focus:ring-teal-100"
             />
           </div>
@@ -41,6 +45,7 @@ export default function SettingsPage() {
               id="notificationEmail"
               type="email"
               placeholder="security@example.com"
+              defaultValue={user.email || ""}
               className="mt-2 min-h-12 w-full rounded-md border border-slate-300 px-4 text-base text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-teal-700 focus:ring-2 focus:ring-teal-100"
             />
           </div>
@@ -94,9 +99,8 @@ export default function SettingsPage() {
           <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
             <h2 className="text-lg font-bold text-slate-950">Persistence note</h2>
             <p className="mt-3 text-sm leading-6 text-slate-600">
-              These controls do not save to a server yet. Organization settings
-              will become database-backed after authentication and workspace
-              persistence are implemented.
+              These controls do not save yet. Organization settings will become
+              editable after the core persistence model settles.
             </p>
           </section>
 

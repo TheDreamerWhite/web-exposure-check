@@ -1,79 +1,130 @@
-# Database Schema Plan
+# Database Schema
 
-MVP 2.0 does not connect to a real database. The dashboard uses localStorage only
-for UI demonstration. This schema plan describes the future database needed for
-authentication, organizations, domain monitoring, historical scan results,
-reporting, billing, and auditability.
+MVP 2.1 uses Supabase Auth and Supabase Postgres. The SQL migration lives at
+`supabase/migrations/001_saas_foundation.sql`.
+
+Run that migration manually in the Supabase SQL editor for now. Generated
+Supabase TypeScript types can replace the handwritten types in
+`lib/types/database.ts` after the project is linked to a Supabase instance.
+
+## Row Level Security
+
+RLS is enabled on all MVP 2.1 tables. Policies allow authenticated users to read
+and write only rows belonging to organizations where they are members. The
+`public.is_org_member(org_id uuid)` helper supports member-scoped policies.
+
+The organization owner can also read the organization they created before the
+owner membership row exists.
 
 ## users
 
-Required: future, MVP 2.1.
+Required: provided by Supabase Auth in MVP 2.1.
 
 Purpose: authenticated people who can access the SaaS dashboard.
 
 Important fields:
 
-- `id`: primary key
-- `email`: unique login email
-- `name`: display name
-- `email_verified_at`: optional verification timestamp
-- `created_at`, `updated_at`: timestamps
+- `id`: Supabase Auth user ID
+- `email`: login email
+- Auth metadata and timestamps managed by Supabase
 
-Notes: keep user identity separate from organization membership so one user can
-eventually belong to multiple workspaces.
+Notes: app tables reference `auth.users(id)` instead of creating a duplicate
+`public.users` table in this MVP.
 
 ## organizations
 
-Required: future, MVP 2.1.
+Required: MVP 2.1.
 
 Purpose: business workspaces that own domains, reports, billing, and team
 membership.
 
 Important fields:
 
-- `id`: primary key
+- `id`: uuid primary key
 - `name`: organization name
-- `owner_user_id`: initial owner reference
-- `created_at`, `updated_at`: timestamps
+- `owner_user_id`: references `auth.users(id)`
+- `created_at`: timestamp
 
-Notes: most SaaS data should be scoped by `organization_id`.
+Notes: most SaaS data is scoped by `organization_id`.
 
 ## organization_members
 
-Required: future, MVP 2.1 or MVP 2.7.
+Required: MVP 2.1.
 
 Purpose: links users to organizations with roles.
 
 Important fields:
 
-- `id`: primary key
-- `organization_id`: references organizations
-- `user_id`: references users
-- `role`: owner, admin, viewer
-- `invited_at`, `joined_at`: timestamps
-- `created_at`, `updated_at`: timestamps
+- `id`: uuid primary key
+- `organization_id`: references `organizations(id)`
+- `user_id`: references `auth.users(id)`
+- `role`: owner, admin, member
+- `created_at`: timestamp
 
-Notes: use this for dashboard authorization and team management.
+Notes: `organization_id, user_id` is unique. Team invitations and finer role
+permissions are future work.
 
 ## domains
 
-Required: future, MVP 2.1.
+Required: MVP 2.1.
 
 Purpose: authorized business domains monitored by an organization.
 
 Important fields:
 
-- `id`: primary key
-- `organization_id`: references organizations
-- `domain_name`: normalized domain, unique per organization
+- `id`: uuid primary key
+- `organization_id`: references `organizations(id)`
+- `domain`: normalized domain, unique per organization
 - `monitoring_frequency`: manual, weekly, monthly
-- `status`: active, paused, archived
 - `authorization_confirmed`: boolean
-- `created_by_user_id`: references users
+- `status`: active or paused
 - `created_at`, `updated_at`: timestamps
 
-Notes: do not enable scheduled scanning until authorization and verification
-rules are in place.
+Notes: domain verification is not implemented yet. Scheduled scanning should
+wait for verification and rate-limit controls.
+
+## scan_results
+
+Required: MVP 2.1.
+
+Purpose: stores each authenticated dashboard scan result.
+
+Important fields:
+
+- `id`: uuid primary key
+- `domain_id`: references `domains(id)`
+- `organization_id`: references `organizations(id)`
+- `domain`: domain snapshot at scan time
+- `score`: integer 0-100
+- `risk_level`: Low Risk, Medium Risk, High Risk
+- `checks`: JSONB copy of the compatible `/api/scan` checks object
+- `scanned_at`: timestamp
+
+Notes: public anonymous scans are still local to the browser unless run through
+the authenticated dashboard scan route.
+
+## findings
+
+Required: MVP 2.1.
+
+Purpose: normalized non-OK issues derived from saved scan results.
+
+Important fields:
+
+- `id`: uuid primary key
+- `scan_result_id`: references `scan_results(id)`
+- `domain_id`: references `domains(id)`
+- `organization_id`: references `organizations(id)`
+- `check_key`: ssl, spf, dmarc, hsts, csp, etc.
+- `status`: Missing or Warning
+- `severity`: low, medium, high
+- `title`: user-facing finding title
+- `description`: risk explanation
+- `suggested_fix`: remediation suggestion
+- `created_at`: timestamp
+
+Notes: findings currently represent saved scan observations. Finding lifecycle,
+resolution state, and deduplication are future work.
 
 ## domain_verifications
 
@@ -84,55 +135,15 @@ domain.
 
 Important fields:
 
-- `id`: primary key
-- `domain_id`: references domains
+- `id`
+- `domain_id`
 - `method`: dns_txt, file, manual_review
-- `token`: verification token
+- `token`
 - `status`: pending, verified, failed, expired
-- `verified_at`: optional timestamp
-- `created_at`, `updated_at`: timestamps
+- `verified_at`
+- `created_at`, `updated_at`
 
 Notes: verification should be required before scheduled scans and email reports.
-
-## scan_results
-
-Required: future, MVP 2.1.
-
-Purpose: stores each manual or scheduled scan result.
-
-Important fields:
-
-- `id`: primary key
-- `domain_id`: references domains
-- `score`: integer 0-100
-- `risk_level`: Low Risk, Medium Risk, High Risk
-- `checks_json`: JSON copy of the `/api/scan` checks object
-- `scan_source`: manual or scheduled
-- `started_at`, `completed_at`: timestamps
-- `created_at`: timestamp
-
-Notes: preserve the current `/api/scan` shape so the public scanner and SaaS
-dashboard can share the same scan contract.
-
-## findings
-
-Required: future, MVP 2.1.
-
-Purpose: normalized issues derived from scan results.
-
-Important fields:
-
-- `id`: primary key
-- `scan_result_id`: references scan_results
-- `domain_id`: references domains
-- `finding_key`: ssl, spf, dmarc, hsts, csp, etc.
-- `status`: OK, Missing, Warning
-- `severity`: low, medium, high
-- `explanation`: user-facing risk explanation
-- `remediation`: suggested fix
-- `created_at`: timestamp
-
-Notes: findings power dashboards, reports, and AI risk summaries.
 
 ## reports
 
@@ -142,15 +153,15 @@ Purpose: stores generated report metadata and summaries.
 
 Important fields:
 
-- `id`: primary key
-- `organization_id`: references organizations
-- `domain_id`: optional domain reference
-- `scan_result_id`: optional scan result reference
-- `report_type`: weekly_summary, monthly_executive, technical_remediation
-- `status`: draft, generated, delivered, failed
-- `summary`: human-readable summary
-- `report_url`: optional storage URL
-- `created_at`: timestamp
+- `id`
+- `organization_id`
+- `domain_id`
+- `scan_result_id`
+- `report_type`
+- `status`
+- `summary`
+- `report_url`
+- `created_at`
 
 Notes: reports may summarize one domain or an entire organization.
 
@@ -162,14 +173,14 @@ Purpose: tracks email or other report delivery attempts.
 
 Important fields:
 
-- `id`: primary key
-- `report_id`: references reports
-- `recipient_email`: delivery target
-- `delivery_provider`: email provider name
-- `status`: queued, sent, failed
-- `sent_at`: optional timestamp
-- `error_message`: optional failure detail
-- `created_at`: timestamp
+- `id`
+- `report_id`
+- `recipient_email`
+- `delivery_provider`
+- `status`
+- `sent_at`
+- `error_message`
+- `created_at`
 
 Notes: keep delivery history separate from report generation.
 
@@ -181,18 +192,18 @@ Purpose: stores paid plan and billing provider state per organization.
 
 Important fields:
 
-- `id`: primary key
-- `organization_id`: references organizations
-- `provider`: stripe or future provider
-- `provider_customer_id`: billing customer ID
-- `provider_subscription_id`: subscription ID
-- `plan`: trial, pro, business
-- `status`: trialing, active, past_due, canceled
-- `current_period_end`: optional timestamp
-- `created_at`, `updated_at`: timestamps
+- `id`
+- `organization_id`
+- `provider`
+- `provider_customer_id`
+- `provider_subscription_id`
+- `plan`
+- `status`
+- `current_period_end`
+- `created_at`, `updated_at`
 
-Notes: plan limits should gate domains, schedules, reports, AI usage, and
-retention.
+Notes: plan limits should gate domains, schedules, reports, AI usage, team
+seats, and history retention.
 
 ## audit_logs
 
@@ -202,11 +213,11 @@ Purpose: records security-relevant account, domain, scan, and billing events.
 
 Important fields:
 
-- `id`: primary key
-- `organization_id`: references organizations
-- `user_id`: optional actor reference
-- `event_type`: domain_added, scan_started, report_sent, billing_updated, etc.
-- `metadata_json`: event details
-- `created_at`: timestamp
+- `id`
+- `organization_id`
+- `user_id`
+- `event_type`
+- `metadata_json`
+- `created_at`
 
 Notes: audit logs help prove authorized use and support future team management.

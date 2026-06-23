@@ -18,7 +18,7 @@ Status: complete.
 
 ## MVP 2.0: SaaS Architecture Foundation
 
-Status: current.
+Status: complete.
 
 - Dashboard shell at `/dashboard`
 - Domain management UI
@@ -31,12 +31,16 @@ Status: current.
 
 ## MVP 2.1: Authentication And Database Persistence
 
+Status: current.
+
 - Add account creation and sign-in
 - Add organizations and organization members
 - Persist domain inventory
 - Persist manual scan results and findings
 - Replace localStorage with server-backed data
 - Add basic role and ownership checks for dashboard data
+- Add Supabase RLS policies so organization data is member-scoped
+- Keep the public scanner available without an account
 
 ## MVP 2.2: Domain Verification
 

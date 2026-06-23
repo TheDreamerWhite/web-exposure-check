@@ -1,3 +1,5 @@
+import { requireDashboardContext } from "@/lib/dashboard/context";
+
 const reportCards = [
   {
     title: "Weekly Security Summary",
@@ -19,7 +21,9 @@ const reportCards = [
   },
 ];
 
-export default function ReportsPage() {
+export default async function ReportsPage() {
+  const { organization } = await requireDashboardContext();
+
   return (
     <div className="space-y-6">
       <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
@@ -31,6 +35,11 @@ export default function ReportsPage() {
           Automated reports will summarize domain exposure, risk changes, and
           recommended actions.
         </p>
+        {organization && (
+          <p className="mt-2 text-xs font-medium text-slate-500">
+            Workspace: {organization.name}
+          </p>
+        )}
       </section>
 
       <section className="grid gap-4 lg:grid-cols-3">

@@ -1,11 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { requireDashboardContext } from "@/lib/dashboard/context";
 
 export const metadata: Metadata = {
   title: "Dashboard",
   description:
     "Monitor authorized domains and prepare continuous web exposure scans.",
 };
+
+export const dynamic = "force-dynamic";
 
 const dashboardNav = [
   { href: "/dashboard", label: "Overview" },
@@ -15,11 +18,13 @@ const dashboardNav = [
   { href: "/dashboard/billing", label: "Billing" },
 ];
 
-export default function DashboardLayout({
+export default async function DashboardLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const { organization, user } = await requireDashboardContext();
+
   return (
     <main className="bg-slate-100">
       <div className="mx-auto grid min-h-[calc(100vh-8rem)] max-w-7xl gap-6 px-4 py-6 sm:px-6 lg:grid-cols-[260px_minmax(0,1fr)] lg:px-8">
@@ -29,11 +34,10 @@ export default function DashboardLayout({
               Web Exposure Check
             </p>
             <p className="mt-2 text-sm font-semibold text-slate-950">
-              Monitoring workspace
+              {organization?.name || "Monitoring workspace"}
             </p>
             <p className="mt-2 text-xs leading-5 text-slate-600">
-              Authentication and organization access controls will gate this
-              area in a later MVP.
+              Signed in as {user.email || "authenticated user"}.
             </p>
           </div>
 
@@ -52,6 +56,12 @@ export default function DashboardLayout({
               className="mt-2 rounded-md border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 hover:text-slate-950"
             >
               Back to public site
+            </Link>
+            <Link
+              href="/logout"
+              className="rounded-md border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 hover:text-slate-950"
+            >
+              Sign out
             </Link>
           </nav>
 

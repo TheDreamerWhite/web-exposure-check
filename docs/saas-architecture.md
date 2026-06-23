@@ -1,11 +1,11 @@
 # SaaS Architecture
 
 Web Exposure Check is organized so the public scanner can keep working while the
-paid SaaS platform is added gradually.
+paid SaaS platform grows behind authenticated dashboard routes.
 
 ## Public Marketing Website
 
-The public routes explain the product and provide a manual scanner:
+The public routes explain the product and provide an anonymous manual scanner:
 
 - `/`
 - `/features`
@@ -14,9 +14,32 @@ The public routes explain the product and provide a manual scanner:
 - `/terms`
 - `/scan`
 
-The public scanner should remain usable without an account. It is the top of the
-funnel for future SaaS customers and should keep the `/api/scan` response shape
-stable.
+The public scanner remains usable without an account and keeps the `/api/scan`
+success response shape stable:
+
+```json
+{
+  "domain": "example.com",
+  "score": 80,
+  "riskLevel": "Low Risk",
+  "checks": {}
+}
+```
+
+## Supabase Auth
+
+MVP 2.1 adds Supabase Auth through:
+
+- `/login`
+- `/signup`
+- `/logout`
+- `lib/supabase/client.ts`
+- `lib/supabase/server.ts`
+- `proxy.ts`
+
+`proxy.ts` refreshes sessions and redirects unauthenticated dashboard requests to
+`/login`. Dashboard server code still verifies the current user before loading
+or mutating organization data.
 
 ## SaaS Dashboard
 
@@ -30,31 +53,35 @@ The dashboard routes live under `/dashboard`:
 - `/dashboard/settings`
 - `/dashboard/billing`
 
-MVP 2.0 uses localStorage to demonstrate domain inventory and workflow shape.
-Authentication, organization membership, and database-backed authorization are
-future phases.
+MVP 2.1 reads organizations, memberships, domains, scan results, and findings
+from Supabase. Reports, settings, and billing remain placeholders with current
+organization context.
 
 ## Scan API
 
-`/api/scan` is the current scanner API. Its compatible success shape is:
+`/api/scan` remains the anonymous public scanner. It calls
+`lib/scan/run-scan.ts` and returns the compatible result shape.
 
-```json
-{
-  "domain": "example.com",
-  "score": 80,
-  "riskLevel": "Low Risk",
-  "checks": {}
-}
-```
+Authenticated dashboard scans use:
 
-Future SaaS features should call this scanner or an extracted scan service, then
-persist the same normalized scan result to the database.
+- `POST /api/dashboard/domains/[domainId]/scan`
 
-## Future Database
+That route requires a signed-in user, loads the domain through RLS-protected
+Supabase queries, runs the same scan engine, saves a `scan_results` row, and
+saves `findings` rows for non-OK checks.
 
-The database will store users, organizations, domain inventory, verification
-state, scan results, findings, reports, subscriptions, and audit logs. See
-`docs/database-schema.md` for the proposed schema.
+## Supabase Database
+
+The MVP 2.1 database stores:
+
+- organizations
+- organization_members
+- domains
+- scan_results
+- findings
+
+The migration at `supabase/migrations/001_saas_foundation.sql` enables RLS on
+all tables and adds policies scoped to organization members.
 
 ## Future Scheduled Scanner
 
@@ -91,7 +118,7 @@ Billing should be organization-based. Plans can gate:
 - team access
 - scan history retention
 
-No real billing provider, API keys, or webhooks are included in MVP 2.0.
+No real billing provider, API keys, or webhooks are included in MVP 2.1.
 
 ## Security And Authorization Boundaries
 
@@ -99,5 +126,6 @@ No real billing provider, API keys, or webhooks are included in MVP 2.0.
 - The product performs basic external exposure checks, not intrusive penetration
   testing.
 - Automated scanning must be lawful, authorized, rate-limited, and auditable.
-- Secrets must remain server-side and should never be committed.
+- `SUPABASE_SECRET_KEY` must stay server-side only.
+- No real secrets should be committed.
 - Domain verification should be added before scheduled scanning is enabled.
