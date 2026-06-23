@@ -6,6 +6,7 @@ type CheckStatus = "OK" | "Missing" | "Warning";
 
 type CheckKey =
   | "ssl"
+  | "httpsRedirect"
   | "spf"
   | "dmarc"
   | "hsts"
@@ -18,6 +19,7 @@ type ScanResult = {
   riskLevel: string;
   checks: {
     ssl: CheckStatus;
+    httpsRedirect: CheckStatus;
     spf: CheckStatus;
     dmarc: CheckStatus;
     hsts: CheckStatus;
@@ -28,6 +30,7 @@ type ScanResult = {
 
 const checkLabels: Record<CheckKey, string> = {
   ssl: "SSL Certificate",
+  httpsRedirect: "HTTPS Redirect",
   spf: "SPF Record",
   dmarc: "DMARC Record",
   hsts: "HSTS Header",
@@ -41,11 +44,17 @@ const explanations: Record<
     risk: string;
     recommendation: string;
   }
+
 > = {
   ssl: {
     risk: "The SSL certificate protects data between the visitor and the website. If it is invalid or close to expiration, users may see browser warnings or lose trust in the website.",
     recommendation:
       "Use a valid TLS certificate and renew it before expiration. Services such as Let's Encrypt can automate this process.",
+  },
+  httpsRedirect: {
+    risk: "HTTPS redirect ensures visitors are automatically moved from the insecure HTTP version of the website to the encrypted HTTPS version. Without it, users may access the site through an unencrypted connection.",
+    recommendation:
+      "Configure your web server or hosting provider to redirect all HTTP traffic to HTTPS using a permanent 301 redirect.",
   },
   spf: {
     risk: "SPF helps prevent attackers from sending fake emails using your domain. Without SPF, your domain can be easier to abuse in phishing campaigns.",
@@ -126,8 +135,8 @@ export default function Home() {
 
   const issueEntries = result
     ? (Object.entries(result.checks) as [CheckKey, CheckStatus][]).filter(
-        ([, status]) => status !== "OK"
-      )
+      ([, status]) => status !== "OK"
+    )
     : [];
 
   return (
