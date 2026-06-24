@@ -165,6 +165,87 @@ export type Database = {
         };
         Relationships: [];
       };
+      scan_reports: {
+        Row: {
+          id: string;
+          user_id: string;
+          domain: string;
+          customer_name: string | null;
+          internal_note: string | null;
+          locale: string;
+          score: number;
+          risk_level: string;
+          scan_result: Json;
+          generated_report: Json;
+          finding_statuses: Json;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          domain: string;
+          customer_name?: string | null;
+          internal_note?: string | null;
+          locale?: string;
+          score: number;
+          risk_level: string;
+          scan_result: Json;
+          generated_report: Json;
+          finding_statuses?: Json;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          domain?: string;
+          customer_name?: string | null;
+          internal_note?: string | null;
+          locale?: string;
+          score?: number;
+          risk_level?: string;
+          scan_result?: Json;
+          generated_report?: Json;
+          finding_statuses?: Json;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      agency_profiles: {
+        Row: {
+          id: string;
+          user_id: string;
+          agency_name: string | null;
+          agency_email: string | null;
+          agency_website: string | null;
+          logo_url: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          agency_name?: string | null;
+          agency_email?: string | null;
+          agency_website?: string | null;
+          logo_url?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          agency_name?: string | null;
+          agency_email?: string | null;
+          agency_website?: string | null;
+          logo_url?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;
@@ -179,3 +260,6 @@ export type OrganizationMember =
 export type Domain = Database["public"]["Tables"]["domains"]["Row"];
 export type ScanResult = Database["public"]["Tables"]["scan_results"]["Row"];
 export type Finding = Database["public"]["Tables"]["findings"]["Row"];
+export type ScanReport = Database["public"]["Tables"]["scan_reports"]["Row"];
+export type AgencyProfile =
+  Database["public"]["Tables"]["agency_profiles"]["Row"];

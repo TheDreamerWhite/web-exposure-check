@@ -5,16 +5,84 @@ import {
   getDashboardSummary,
 } from "@/lib/dashboard/data";
 import {
+  getAgencyProfile,
+  getScanReportsForUser,
+} from "@/lib/scans/history";
+import type { ScanReportRecord } from "@/lib/scans/types";
+import {
   formatDashboardDateTime,
   formatFrequency,
   formatStoredDate,
 } from "./components/domain-storage";
 import { RiskPill } from "./components/risk-pill";
+import { AgencyProfileForm } from "./agency-profile-form";
+
+function getAgencyMetrics(reports: ScanReportRecord[]) {
+  const clients = new Set(
+    reports
+      .map((report) => report.customer_name)
+      .filter((name): name is string => Boolean(name))
+  );
+  const latestByDomain = new Map<string, ScanReportRecord>();
+  const reportsByDomain = new Map<string, ScanReportRecord[]>();
+  const now = new Date();
+  const currentMonth = now.getMonth();
+  const currentYear = now.getFullYear();
+
+  reports.forEach((report) => {
+    const current = latestByDomain.get(report.domain);
+
+    if (!current || report.created_at > current.created_at) {
+      latestByDomain.set(report.domain, report);
+    }
+
+    reportsByDomain.set(report.domain, [
+      ...(reportsByDomain.get(report.domain) || []),
+      report,
+    ]);
+  });
+
+  const improvedDomains = Array.from(reportsByDomain.values()).filter(
+    (domainReports) => {
+      const sortedReports = [...domainReports].sort(
+        (a, b) =>
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+
+      return (
+        sortedReports.length > 1 &&
+        sortedReports[0].score > sortedReports[1].score
+      );
+    }
+  ).length;
+
+  const scansThisMonth = reports.filter((report) => {
+    const createdAt = new Date(report.created_at);
+
+    return (
+      createdAt.getMonth() === currentMonth &&
+      createdAt.getFullYear() === currentYear
+    );
+  }).length;
+
+  return {
+    clientCount: clients.size,
+    reportCount: reports.length,
+    latestDomainCount: latestByDomain.size,
+    improvedDomains,
+    scansThisMonth,
+  };
+}
 
 export default async function DashboardPage() {
-  const { organization } = await requireOrganizationContext();
+  const { organization, user } = await requireOrganizationContext();
 
-  const summary = await getDashboardSummary(organization.id);
+  const [summary, reports, agencyProfile] = await Promise.all([
+    getDashboardSummary(organization.id),
+    getScanReportsForUser(user.id, 100),
+    getAgencyProfile(user.id),
+  ]);
+  const agencyMetrics = getAgencyMetrics(reports);
   const latestDomains = [...summary.domains]
     .sort(
       (a, b) =>
@@ -55,6 +123,48 @@ export default async function DashboardPage() {
 
       <section className="grid gap-4 md:grid-cols-4">
         <article className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+          <p className="text-sm font-medium text-slate-500">Client reports</p>
+          <p className="mt-4 text-3xl font-black text-slate-950">
+            {agencyMetrics.reportCount}
+          </p>
+          <p className="mt-2 text-sm text-slate-600">
+            Business-friendly reports saved.
+          </p>
+        </article>
+
+        <article className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+          <p className="text-sm font-medium text-slate-500">Clients</p>
+          <p className="mt-4 text-3xl font-black text-slate-950">
+            {agencyMetrics.clientCount}
+          </p>
+          <p className="mt-2 text-sm text-slate-600">
+            Named customers in report history.
+          </p>
+        </article>
+
+        <article className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+          <p className="text-sm font-medium text-slate-500">Domains reported</p>
+          <p className="mt-4 text-3xl font-black text-slate-950">
+            {agencyMetrics.latestDomainCount}
+          </p>
+          <p className="mt-2 text-sm text-slate-600">
+            Unique domains with saved reports.
+          </p>
+        </article>
+
+        <article className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+          <p className="text-sm font-medium text-slate-500">Improved domains</p>
+          <p className="mt-4 text-3xl font-black text-slate-950">
+            {agencyMetrics.improvedDomains}
+          </p>
+          <p className="mt-2 text-sm text-slate-600">
+            Latest score improved over previous report.
+          </p>
+        </article>
+      </section>
+
+      <section className="grid gap-4 md:grid-cols-4">
+        <article className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
           <p className="text-sm font-medium text-slate-500">Monitored domains</p>
           <p className="mt-4 text-3xl font-black text-slate-950">
             {summary.domains.length}
@@ -80,8 +190,12 @@ export default async function DashboardPage() {
 
         <article className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
           <p className="text-sm font-medium text-slate-500">Report status</p>
-          <p className="mt-4 text-lg font-black text-slate-950">Planned</p>
-          <p className="mt-2 text-sm text-slate-600">Email reports arrive later.</p>
+          <p className="mt-4 text-lg font-black text-slate-950">
+            Manual PDFs
+          </p>
+          <p className="mt-2 text-sm text-slate-600">
+            Automated email reports arrive later.
+          </p>
         </article>
       </section>
 
@@ -185,6 +299,32 @@ export default async function DashboardPage() {
               )}
             </div>
           </section>
+
+          <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+            <h2 className="text-lg font-bold text-slate-950">Agency report flow</h2>
+            <div className="mt-4 grid gap-3 text-sm leading-6 text-slate-600">
+              <div className="flex justify-between gap-3">
+                <span>Scans this month</span>
+                <span className="font-bold text-slate-950">
+                  {agencyMetrics.scansThisMonth}
+                </span>
+              </div>
+              <div className="flex justify-between gap-3">
+                <span>Saved report domains</span>
+                <span className="font-bold text-slate-950">
+                  {agencyMetrics.latestDomainCount}
+                </span>
+              </div>
+              <div className="flex justify-between gap-3">
+                <span>Named clients</span>
+                <span className="font-bold text-slate-950">
+                  {agencyMetrics.clientCount}
+                </span>
+              </div>
+            </div>
+          </section>
+
+          <AgencyProfileForm profile={agencyProfile} />
 
           <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
             <h2 className="text-lg font-bold text-slate-950">Authorized use</h2>

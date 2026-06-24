@@ -1,4 +1,5 @@
 import { requireOrganizationContext } from "@/lib/dashboard/context";
+import Link from "next/link";
 
 const reportCards = [
   {
@@ -40,6 +41,20 @@ export default async function ReportsPage() {
             Workspace: {organization.name}
           </p>
         )}
+        <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+          <Link
+            href="/dashboard/history"
+            className="inline-flex items-center justify-center rounded-md bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-teal-800"
+          >
+            Open saved reports
+          </Link>
+          <Link
+            href="/dashboard/clients"
+            className="inline-flex items-center justify-center rounded-md border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-950 transition hover:border-teal-700 hover:text-teal-800"
+          >
+            View clients
+          </Link>
+        </div>
       </section>
 
       <section className="grid gap-4 lg:grid-cols-3">

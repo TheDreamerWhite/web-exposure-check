@@ -1,6 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { generateBusinessReport } from "@/lib/report/generateReport";
 import { orderedCheckEntries, getCheckInfo, getCheckTone } from "@/lib/scan/checks";
 import { runExposureScan, ScanInputError } from "@/lib/scan/run-scan";
+import { createScanReport } from "@/lib/scans/history";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { Json } from "@/lib/types/database";
@@ -101,6 +103,7 @@ export async function POST(_request: NextRequest, { params }: ScanRouteProps) {
       });
 
     let findingIds: string[] = [];
+    let scanReportId: string | null = null;
 
     if (findingRows.length > 0) {
       const { data: savedFindings, error: findingsError } = await supabase
@@ -115,10 +118,25 @@ export async function POST(_request: NextRequest, { params }: ScanRouteProps) {
       findingIds = (savedFindings || []).map((finding) => finding.id);
     }
 
+    try {
+      const generatedReport = generateBusinessReport(scanResult, "en");
+      const savedReport = await createScanReport({
+        userId: user.id,
+        scanResult,
+        generatedReport,
+        locale: "en",
+      });
+
+      scanReportId = savedReport.id;
+    } catch (reportError) {
+      console.error("Dashboard scan report history save failed:", reportError);
+    }
+
     return NextResponse.json({
       ...scanResult,
       scanResultId: savedScan.id,
       findingIds,
+      scanReportId,
     });
   } catch (error) {
     if (error instanceof ScanInputError) {

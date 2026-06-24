@@ -5,6 +5,17 @@ import {
   getCheckTone,
   orderedCheckEntries,
 } from "@/lib/scan/checks";
+import { generateBusinessReport } from "@/lib/report/generateReport";
+import { downloadReportPdf } from "@/lib/report/pdfExport";
+import {
+  reportLanguageLabels,
+  reportUiCopy,
+} from "@/lib/report/reportRules";
+import {
+  reportLanguages,
+  type ReportFinding,
+  type ReportLanguage,
+} from "@/lib/report/types";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 
 type ScanResult = {
@@ -115,48 +126,44 @@ function formatDate(value: string) {
   }
 }
 
-function buildTextReport(scanResult: ScanResult) {
-  const problemEntries = orderedCheckEntries(scanResult.checks).filter(
-    ([, value]) => getCheckTone(value) !== "ok"
-  );
-
-  const checks = orderedCheckEntries(scanResult.checks)
-    .map(([key, value]) => {
-      const info = getCheckInfo(key);
-      const needsFix = getCheckTone(value) !== "ok";
-
-      return [
-        `- ${info.label}: ${value}`,
-        `  What it checks: ${info.description}`,
-        needsFix ? `  Suggested fix: ${info.fix}` : "",
-      ]
-        .filter(Boolean)
-        .join("\n");
-    })
+function buildTextReport(scanResult: ScanResult, language: ReportLanguage) {
+  const report = generateBusinessReport(scanResult, language);
+  const uiCopy = reportUiCopy[language];
+  const findingText = (report.riskFindings.length > 0
+    ? report.riskFindings
+    : report.findings
+  )
+    .map((finding) =>
+      [
+        `- ${finding.title}: ${finding.statusLabel} (${finding.status})`,
+        `  ${uiCopy.businessImpact}: ${finding.businessImpact}`,
+        `  ${uiCopy.responsibleOwner}: ${finding.responsibleOwner}`,
+        `  ${uiCopy.fixDifficulty}: ${finding.fixDifficulty}`,
+        `  ${uiCopy.estimatedFixTime}: ${finding.estimatedFixTime}`,
+        `  ${uiCopy.fixSteps}: ${finding.fixSteps.join(" ")}`,
+      ].join("\n")
+    )
     .join("\n\n");
 
-  const fixes =
-    problemEntries.length > 0
-      ? problemEntries
-          .map(([key]) => `- ${getCheckInfo(key).fix}`)
-          .join("\n")
-      : "- No immediate fixes were identified by these checks.";
+  const technicalChecks = orderedCheckEntries(scanResult.checks)
+    .map(([key, value]) => `- ${getCheckInfo(key).label}: ${value}`)
+    .join("\n");
 
   return `Web Exposure Check Report
 
 Domain: ${scanResult.domain}
 Score: ${scanResult.score}/100
 Risk level: ${scanResult.riskLevel}
-Detected problems: ${problemEntries.length}
+Language: ${language}
 
-Risk explanation:
-${getRiskExplanation(scanResult)}
+Business summary:
+${report.summary}
 
-Suggested fixes:
-${fixes}
+Business-friendly findings:
+${findingText}
 
-Checks:
-${checks}
+Original technical results:
+${technicalChecks}
 `;
 }
 
@@ -213,8 +220,14 @@ export default function ScanPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [copyStatus, setCopyStatus] = useState("");
+  const [findingCopyStatus, setFindingCopyStatus] = useState("");
   const [exportStatus, setExportStatus] = useState("");
   const [scanTakingLonger, setScanTakingLonger] = useState(false);
+  const [reportLanguage, setReportLanguage] = useState<ReportLanguage>("en");
+  const [customerName, setCustomerName] = useState("");
+  const [internalNote, setInternalNote] = useState("");
+  const [savedReportId, setSavedReportId] = useState("");
+  const [saveReportStatus, setSaveReportStatus] = useState("");
 
   useEffect(() => {
     const currentHistory = parseHistory(localStorage.getItem(HISTORY_KEY));
@@ -254,6 +267,11 @@ export default function ScanPage() {
         : [],
     [result]
   );
+  const businessReport = useMemo(
+    () => (result ? generateBusinessReport(result, reportLanguage) : null),
+    [result, reportLanguage]
+  );
+  const uiCopy = reportUiCopy[reportLanguage];
 
   const healthyCount = result
     ? Object.values(result.checks).filter((value) => getCheckTone(value) === "ok").length
@@ -281,7 +299,10 @@ export default function ScanPage() {
 
     setError("");
     setCopyStatus("");
+    setFindingCopyStatus("");
     setExportStatus("");
+    setSavedReportId("");
+    setSaveReportStatus("");
     setResult(null);
     setScanTakingLonger(false);
 
@@ -317,6 +338,7 @@ export default function ScanPage() {
       setResult(scanResult);
       setDomain(scanResult.domain);
       saveHistory(scanResult);
+      saveAuthenticatedReport(scanResult);
     } catch (scanError) {
       setError(
         scanError instanceof Error
@@ -326,6 +348,48 @@ export default function ScanPage() {
     } finally {
       setLoading(false);
       setScanTakingLonger(false);
+    }
+  }
+
+  async function saveAuthenticatedReport(scanResult: ScanResult) {
+    setSaveReportStatus("Saving report history...");
+
+    try {
+      const response = await fetch("/api/scan-reports", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          scanResult,
+          locale: reportLanguage,
+          customerName,
+          internalNote,
+        }),
+      });
+
+      if (response.status === 401) {
+        setSaveReportStatus("Sign in to save this report to dashboard history.");
+        return;
+      }
+
+      const data = (await response.json().catch(() => ({}))) as {
+        report?: { id?: string };
+        error?: string;
+      };
+
+      if (!response.ok) {
+        throw new Error(data.error || "Report history save failed.");
+      }
+
+      setSavedReportId(data.report?.id || "");
+      setSaveReportStatus("Saved to dashboard history.");
+    } catch (saveError) {
+      setSaveReportStatus(
+        saveError instanceof Error
+          ? saveError.message
+          : "Report history could not be saved."
+      );
     }
   }
 
@@ -343,7 +407,10 @@ export default function ScanPage() {
   function loadHistoryItem(item: HistoryItem) {
     setError("");
     setCopyStatus("");
+    setFindingCopyStatus("");
     setExportStatus("");
+    setSavedReportId("");
+    setSaveReportStatus("");
     setDomain(item.domain);
 
     if (Object.keys(item.checks).length > 0) {
@@ -357,7 +424,7 @@ export default function ScanPage() {
   async function copyReport() {
     if (!result) return;
 
-    const reportText = buildTextReport(result);
+    const reportText = buildTextReport(result, reportLanguage);
 
     try {
       if (!navigator.clipboard?.writeText) {
@@ -376,15 +443,36 @@ export default function ScanPage() {
     }
   }
 
+  async function copyTechnicianText(finding: ReportFinding) {
+    try {
+      if (!navigator.clipboard?.writeText) {
+        throw new Error("Clipboard API unavailable.");
+      }
+
+      await navigator.clipboard.writeText(finding.copyForTechnician);
+      setFindingCopyStatus(finding.checkKey);
+    } catch {
+      try {
+        copyTextWithFallback(finding.copyForTechnician);
+        setFindingCopyStatus(finding.checkKey);
+      } catch {
+        setFindingCopyStatus("failed");
+      }
+    }
+  }
+
   function exportJsonReport() {
     if (!result) return;
+    const businessReportExport = generateBusinessReport(result, reportLanguage);
 
     const report = {
       exportedAt: new Date().toISOString(),
+      language: reportLanguage,
       domain: result.domain,
       score: result.score,
       riskLevel: result.riskLevel,
       riskExplanation: getRiskExplanation(result),
+      businessReport: businessReportExport,
       checks: result.checks,
       suggestedFixes: problemEntries.map(([key]) => getCheckInfo(key).fix),
     };
@@ -408,6 +496,21 @@ export default function ScanPage() {
       window.setTimeout(() => URL.revokeObjectURL(url), 100);
     } catch {
       setExportStatus("JSON export could not start. Try copying the report instead.");
+    }
+  }
+
+  function downloadPdfReport() {
+    if (!businessReport) return;
+
+    try {
+      downloadReportPdf({
+        report: businessReport,
+        scanDate: new Date().toISOString(),
+        customerName,
+      });
+      setExportStatus("PDF download started.");
+    } catch {
+      setExportStatus("PDF download could not start.");
     }
   }
 
@@ -474,6 +577,39 @@ export default function ScanPage() {
             <p>
               This is a public exposure review, not a full penetration test.
             </p>
+          </div>
+
+          <div className="mt-5 grid gap-3 rounded-lg border border-slate-200 bg-slate-50 p-4 md:grid-cols-2">
+            <div>
+              <label
+                htmlFor="customerName"
+                className="text-sm font-semibold text-slate-950"
+              >
+                Customer name optional
+              </label>
+              <input
+                id="customerName"
+                value={customerName}
+                onChange={(event) => setCustomerName(event.target.value)}
+                placeholder="Restaurante Casa Yong"
+                className="mt-2 min-h-11 w-full rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-teal-700 focus:ring-2 focus:ring-teal-100"
+              />
+            </div>
+            <div>
+              <label
+                htmlFor="internalNote"
+                className="text-sm font-semibold text-slate-950"
+              >
+                Internal note optional
+              </label>
+              <input
+                id="internalNote"
+                value={internalNote}
+                onChange={(event) => setInternalNote(event.target.value)}
+                placeholder="Client asked for monthly report"
+                className="mt-2 min-h-11 w-full rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-950 outline-none transition placeholder:text-slate-400 focus:border-teal-700 focus:ring-2 focus:ring-teal-100"
+              />
+            </div>
           </div>
 
           {error && (
@@ -574,7 +710,23 @@ export default function ScanPage() {
                         Copy or export the current report
                       </h2>
                     </div>
-                    <div className="flex flex-col gap-3 sm:flex-row">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                      <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                        <span>{uiCopy.languageLabel}</span>
+                        <select
+                          value={reportLanguage}
+                          onChange={(event) =>
+                            setReportLanguage(event.target.value as ReportLanguage)
+                          }
+                          className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-950 outline-none transition focus:border-teal-700 focus:ring-2 focus:ring-teal-100"
+                        >
+                          {reportLanguages.map((language) => (
+                            <option key={language} value={language}>
+                              {reportLanguageLabels[language]}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
                       <button
                         type="button"
                         onClick={copyReport}
@@ -589,6 +741,13 @@ export default function ScanPage() {
                       >
                         Export JSON
                       </button>
+                      <button
+                        type="button"
+                        onClick={downloadPdfReport}
+                        className="rounded-md bg-teal-800 px-4 py-2 text-sm font-semibold text-white transition hover:bg-teal-900 focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2"
+                      >
+                        Download PDF
+                      </button>
                     </div>
                   </div>
                   {copyStatus && (
@@ -601,73 +760,202 @@ export default function ScanPage() {
                       {exportStatus}
                     </p>
                   )}
+                  {saveReportStatus && (
+                    <p
+                      className="mt-2 text-sm font-medium text-slate-600"
+                      aria-live="polite"
+                    >
+                      {saveReportStatus}{" "}
+                      {savedReportId && (
+                        <a
+                          href={`/report/${savedReportId}`}
+                          className="font-semibold text-teal-800 hover:text-teal-950"
+                        >
+                          View saved report
+                        </a>
+                      )}
+                    </p>
+                  )}
                 </section>
 
-                <section>
-                  <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
-                    <div>
-                      <p className="text-sm font-semibold uppercase tracking-[0.18em] text-teal-800">
-                        Suggested fixes
+                {businessReport && (
+                  <section className="space-y-4">
+                    <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
+                      <div>
+                        <p className="text-sm font-semibold uppercase tracking-[0.18em] text-teal-800">
+                          {uiCopy.reportTitle}
+                        </p>
+                        <h2 className="mt-2 text-2xl font-bold text-slate-950">
+                          {businessReport.domain}
+                        </h2>
+                        <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
+                          {uiCopy.reportIntro}
+                        </p>
+                      </div>
+                      <p className="text-sm font-medium text-slate-500">
+                        {businessReport.riskFindings.length}{" "}
+                        {uiCopy.needsAttention.toLowerCase()}
                       </p>
-                      <h2 className="mt-2 text-2xl font-bold text-slate-950">
-                        What to improve first
-                      </h2>
                     </div>
-                    <p className="text-sm font-medium text-slate-500">
-                      {problemEntries.length} item
-                      {problemEntries.length === 1 ? "" : "s"} need attention
-                    </p>
-                  </div>
 
-                  <div className="mt-4 grid gap-3">
-                    {problemEntries.length === 0 ? (
-                      <div className="rounded-lg border border-teal-200 bg-teal-50 p-5 text-sm leading-6 text-teal-900">
-                        No immediate fixes were identified by these checks. Keep
-                        monitoring DNS, hosting, and header changes.
+                    <div className="rounded-lg border border-teal-200 bg-teal-50 p-5 text-sm leading-6 text-teal-950">
+                      {businessReport.summary}
+                    </div>
+
+                    {businessReport.riskFindings.length === 0 ? (
+                      <div className="rounded-lg border border-teal-200 bg-white p-5 shadow-sm">
+                        <h3 className="text-lg font-bold text-slate-950">
+                          {uiCopy.noRisksTitle}
+                        </h3>
+                        <p className="mt-2 text-sm leading-6 text-slate-600">
+                          {uiCopy.noRisksText}
+                        </p>
                       </div>
                     ) : (
-                      problemEntries.map(([key, value], index) => {
-                        const info = getCheckInfo(key);
-
-                        return (
+                      <div className="grid gap-4">
+                        {businessReport.riskFindings.map((finding) => (
                           <article
-                            key={key}
-                            className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm"
+                            key={finding.checkKey}
+                            className="rounded-lg border border-rose-200 bg-white p-5 shadow-sm"
                           >
                             <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
                               <div>
-                                <p className="text-sm font-semibold text-slate-500">
-                                  Priority {index + 1}
+                                <p className="text-sm font-semibold text-rose-700">
+                                  {finding.statusLabel}
                                 </p>
-                                <h3 className="mt-1 text-lg font-bold text-slate-950">
-                                  {info.label}
+                                <h3 className="mt-1 text-xl font-bold text-slate-950">
+                                  {finding.title}
                                 </h3>
+                                <p className="mt-3 text-sm leading-6 text-slate-600">
+                                  {finding.explanation}
+                                </p>
                               </div>
                               <span
                                 className={`w-fit rounded-md border px-3 py-1 text-xs font-bold ${getStatusClasses(
-                                  value
+                                  finding.status
                                 )}`}
                               >
-                                {value}
+                                {finding.status}
                               </span>
                             </div>
-                            <p className="mt-3 text-sm leading-6 text-slate-600">
-                              {info.fix}
-                            </p>
+
+                            <div className="mt-5 grid gap-3 md:grid-cols-3">
+                              <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                                <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
+                                  {uiCopy.businessImpact}
+                                </p>
+                                <p className="mt-2 text-sm leading-6 text-slate-700">
+                                  {finding.businessImpact}
+                                </p>
+                              </div>
+                              <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                                <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
+                                  {uiCopy.responsibleOwner}
+                                </p>
+                                <p className="mt-2 text-sm leading-6 text-slate-700">
+                                  {finding.responsibleOwner}
+                                </p>
+                              </div>
+                              <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                                <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">
+                                  {uiCopy.fixDifficulty}
+                                </p>
+                                <p className="mt-2 text-sm leading-6 text-slate-700">
+                                  {finding.fixDifficulty} |{" "}
+                                  {finding.estimatedFixTime}
+                                </p>
+                              </div>
+                            </div>
+
+                            <div className="mt-5 rounded-lg border border-slate-200 bg-slate-50 p-4">
+                              <p className="text-sm font-bold text-slate-950">
+                                {uiCopy.fixSteps}
+                              </p>
+                              <ol className="mt-3 space-y-2 text-sm leading-6 text-slate-700">
+                                {finding.fixSteps.map((step) => (
+                                  <li key={step} className="flex gap-2">
+                                    <span className="font-semibold text-teal-800">
+                                      -
+                                    </span>
+                                    <span>{step}</span>
+                                  </li>
+                                ))}
+                              </ol>
+                            </div>
+
+                            <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                              <button
+                                type="button"
+                                onClick={() => copyTechnicianText(finding)}
+                                className="w-fit rounded-md bg-slate-950 px-4 py-2 text-sm font-semibold text-white transition hover:bg-teal-800 focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2"
+                              >
+                                {uiCopy.copyForTechnician}
+                              </button>
+                              {findingCopyStatus === finding.checkKey && (
+                                <p
+                                  className="text-sm font-medium text-teal-800"
+                                  aria-live="polite"
+                                >
+                                  {uiCopy.copied}
+                                </p>
+                              )}
+                              {findingCopyStatus === "failed" && (
+                                <p
+                                  className="text-sm font-medium text-rose-700"
+                                  aria-live="polite"
+                                >
+                                  Copy failed. Your browser may block clipboard
+                                  access.
+                                </p>
+                              )}
+                            </div>
                           </article>
-                        );
-                      })
+                        ))}
+                      </div>
                     )}
-                  </div>
-                </section>
+
+                    {businessReport.passedFindings.length > 0 && (
+                      <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+                        <h3 className="text-lg font-bold text-slate-950">
+                          {uiCopy.passedChecks}
+                        </h3>
+                        <div className="mt-4 grid gap-3 md:grid-cols-2">
+                          {businessReport.passedFindings.map((finding) => (
+                            <article
+                              key={finding.checkKey}
+                              className="rounded-lg border border-teal-100 bg-teal-50/60 p-4"
+                            >
+                              <div className="flex items-start justify-between gap-3">
+                                <div>
+                                  <p className="font-semibold text-slate-950">
+                                    {finding.title}
+                                  </p>
+                                  <p className="mt-2 text-sm leading-6 text-slate-600">
+                                    {finding.explanation}
+                                  </p>
+                                </div>
+                                <span className="rounded-md border border-teal-200 bg-white px-2 py-1 text-xs font-bold text-teal-800">
+                                  {finding.statusLabel}
+                                </span>
+                              </div>
+                            </article>
+                          ))}
+                        </div>
+                      </section>
+                    )}
+                  </section>
+                )}
 
                 <section>
                   <p className="text-sm font-semibold uppercase tracking-[0.18em] text-teal-800">
-                    Check cards
+                    {uiCopy.technicalResults}
                   </p>
                   <h2 className="mt-2 text-2xl font-bold text-slate-950">
-                    Detailed results
+                    Scanner output
                   </h2>
+                  <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
+                    {uiCopy.technicalIntro}
+                  </p>
 
                   <div className="mt-4 grid gap-4 md:grid-cols-2">
                     {orderedCheckEntries(result.checks).map(([key, value]) => {

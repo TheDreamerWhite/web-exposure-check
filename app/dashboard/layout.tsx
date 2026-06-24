@@ -13,6 +13,8 @@ export const dynamic = "force-dynamic";
 const dashboardNav = [
   { href: "/dashboard", label: "Overview" },
   { href: "/dashboard/domains", label: "Domains" },
+  { href: "/dashboard/history", label: "History" },
+  { href: "/dashboard/clients", label: "Clients" },
   { href: "/dashboard/reports", label: "Reports" },
   { href: "/dashboard/settings", label: "Settings" },
   { href: "/dashboard/billing", label: "Billing" },
