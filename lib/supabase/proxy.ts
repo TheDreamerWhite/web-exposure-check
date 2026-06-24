@@ -1,5 +1,10 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { getAbsoluteAppUrl } from "@/lib/auth/redirects";
+import {
+  getSupabaseAuthCookieCount,
+  logSupabaseAuthDebug,
+} from "./auth-debug";
 import { isSupabaseConfigured, getSupabasePublicConfig } from "./config";
 import type { Database } from "@/lib/types/database";
 
@@ -13,9 +18,7 @@ function isProtectedPath(pathname: string) {
 }
 
 function redirectToLogin(request: NextRequest) {
-  const redirectUrl = request.nextUrl.clone();
-
-  redirectUrl.pathname = "/login";
+  const redirectUrl = getAbsoluteAppUrl("/login", request.nextUrl.origin);
   redirectUrl.searchParams.set(
     "redirectTo",
     `${request.nextUrl.pathname}${request.nextUrl.search}`
@@ -24,17 +27,37 @@ function redirectToLogin(request: NextRequest) {
   return NextResponse.redirect(redirectUrl);
 }
 
+function markAuthResponse(response: NextResponse) {
+  response.headers.set("Cache-Control", "private, no-store");
+
+  return response;
+}
+
+function copyCookieResponse(from: NextResponse, to: NextResponse) {
+  from.cookies.getAll().forEach((cookie) => {
+    to.cookies.set(cookie);
+  });
+
+  ["Cache-Control", "Expires", "Pragma"].forEach((header) => {
+    const value = from.headers.get(header);
+
+    if (value) {
+      to.headers.set(header, value);
+    }
+  });
+
+  return to;
+}
+
 export async function updateSupabaseSession(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
   if (!isSupabaseConfigured()) {
     if (isProtectedPath(pathname)) {
-      const redirectUrl = request.nextUrl.clone();
-
-      redirectUrl.pathname = "/login";
+      const redirectUrl = getAbsoluteAppUrl("/login", request.nextUrl.origin);
       redirectUrl.searchParams.set("message", "supabase-config-required");
 
-      return NextResponse.redirect(redirectUrl);
+      return markAuthResponse(NextResponse.redirect(redirectUrl));
     }
 
     return NextResponse.next({
@@ -72,14 +95,44 @@ export async function updateSupabaseSession(request: NextRequest) {
 
   const {
     data: { user },
+    error: userError,
   } = await supabase.auth.getUser();
 
   if (!user && isProtectedPath(pathname)) {
-    return redirectToLogin(request);
+    logSupabaseAuthDebug("proxy blocked unauthenticated dashboard request", {
+      pathname,
+      authCookieCount: getSupabaseAuthCookieCount(request.cookies.getAll()),
+      hasError: Boolean(userError),
+      errorMessage: userError?.message,
+    });
+
+    return markAuthResponse(copyCookieResponse(response, redirectToLogin(request)));
   }
 
   if (user && authPaths.has(pathname)) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+    logSupabaseAuthDebug("proxy redirected signed-in user away from auth page", {
+      pathname,
+      userId: user.id,
+    });
+
+    return markAuthResponse(
+      copyCookieResponse(
+        response,
+        NextResponse.redirect(
+          getAbsoluteAppUrl("/dashboard", request.nextUrl.origin)
+        )
+      )
+    );
+  }
+
+  if (isProtectedPath(pathname) || authPaths.has(pathname)) {
+    logSupabaseAuthDebug("proxy session check completed", {
+      pathname,
+      hasUser: Boolean(user),
+      authCookieCount: getSupabaseAuthCookieCount(request.cookies.getAll()),
+    });
+
+    return markAuthResponse(response);
   }
 
   return response;

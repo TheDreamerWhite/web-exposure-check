@@ -1,7 +1,12 @@
 import "server-only";
 
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
+import {
+  getSupabaseAuthCookieCount,
+  logSupabaseAuthDebug,
+} from "@/lib/supabase/auth-debug";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type {
   Organization,
@@ -34,6 +39,14 @@ export async function getCurrentUser() {
   } = await supabase.auth.getUser();
 
   if (error || !user) {
+    const cookieStore = await cookies();
+
+    logSupabaseAuthDebug("dashboard server auth check failed", {
+      authCookieCount: getSupabaseAuthCookieCount(cookieStore.getAll()),
+      hasError: Boolean(error),
+      errorMessage: error?.message,
+    });
+
     redirect("/login");
   }
 

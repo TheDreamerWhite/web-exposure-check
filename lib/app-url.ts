@@ -8,8 +8,8 @@ function normalizeAppUrl(value: string) {
   }
 }
 
-export function getPublicAppUrl() {
+export function getPublicAppUrl(fallbackOrigin?: string) {
   return normalizeAppUrl(
-    process.env.NEXT_PUBLIC_APP_URL?.trim() || fallbackAppUrl
+    process.env.NEXT_PUBLIC_APP_URL?.trim() || fallbackOrigin || fallbackAppUrl
   );
 }

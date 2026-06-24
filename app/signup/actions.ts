@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { getAuthCallbackUrl } from "@/lib/auth/redirects";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -47,6 +48,7 @@ export async function signupAction(
     email,
     password,
     options: {
+      emailRedirectTo: getAuthCallbackUrl("/dashboard"),
       data: {
         organization_name: organizationName,
       },

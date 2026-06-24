@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { getSafeRedirectPath } from "@/lib/auth/redirects";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { LoginForm } from "./login-form";
 
@@ -15,14 +16,6 @@ type LoginPageProps = {
   }>;
 };
 
-function getSafeRedirectPath(value?: string) {
-  if (!value || !value.startsWith("/") || value.startsWith("//")) {
-    return "/dashboard";
-  }
-
-  return value;
-}
-
 function getPageMessage(message?: string, loggedOut?: string) {
   if (loggedOut) {
     return "You have been signed out.";
@@ -30,6 +23,14 @@ function getPageMessage(message?: string, loggedOut?: string) {
 
   if (message === "supabase-config-required") {
     return "Supabase is not configured yet. Add the required variables to .env.local before using the dashboard.";
+  }
+
+  if (message === "auth-code-missing") {
+    return "The auth callback was missing a confirmation code. Try signing in again.";
+  }
+
+  if (message === "auth-callback-error") {
+    return "Supabase could not complete the auth callback. Check your Auth redirect URL settings and try again.";
   }
 
   return "";
