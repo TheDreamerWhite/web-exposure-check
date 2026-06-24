@@ -6,6 +6,23 @@ import { createSupabaseRouteHandlerClient } from "@/lib/supabase/route-handler";
 
 export async function GET(request: NextRequest) {
   const response = NextResponse.redirect(
+    getAbsoluteAppUrl("/login?message=logout-requires-post", request.nextUrl.origin)
+  );
+
+  response.headers.set("Cache-Control", "private, no-store");
+
+  logSupabaseAuthDebug("ignored GET logout request", {
+    requestHost:
+      request.headers.get("x-forwarded-host") ||
+      request.headers.get("host") ||
+      "unknown",
+  });
+
+  return response;
+}
+
+export async function POST(request: NextRequest) {
+  const response = NextResponse.redirect(
     getAbsoluteAppUrl("/login?loggedOut=true", request.nextUrl.origin)
   );
 
@@ -20,8 +37,4 @@ export async function GET(request: NextRequest) {
   }
 
   return response;
-}
-
-export async function POST(request: NextRequest) {
-  return GET(request);
 }

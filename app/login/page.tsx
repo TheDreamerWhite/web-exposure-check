@@ -33,6 +33,10 @@ function getPageMessage(message?: string, loggedOut?: string) {
     return "Supabase could not complete the auth callback. Check your Auth redirect URL settings and try again.";
   }
 
+  if (message === "logout-requires-post") {
+    return "Use the Sign out button from the dashboard to end your session.";
+  }
+
   return "";
 }
 
