@@ -1,80 +1,22 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import type { FormEvent } from "react";
-import { useState } from "react";
-import { getSafeRedirectPath } from "@/lib/auth/redirects";
-import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { useActionState } from "react";
+import { loginAction, type AuthActionState } from "./actions";
 
 type LoginFormProps = {
   configured: boolean;
   redirectTo: string;
 };
 
+const initialState: AuthActionState = {};
+
 export function LoginForm({ configured, redirectTo }: LoginFormProps) {
-  const router = useRouter();
-  const [error, setError] = useState("");
-  const [message, setMessage] = useState("");
-  const [pending, setPending] = useState(false);
-
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    if (!configured || pending) {
-      return;
-    }
-
-    const formData = new FormData(event.currentTarget);
-    const email = String(formData.get("email") || "").trim();
-    const password = String(formData.get("password") || "");
-    const nextPath = getSafeRedirectPath(
-      String(formData.get("redirectTo") || redirectTo)
-    );
-
-    setError("");
-    setMessage("");
-
-    if (!email || !password) {
-      setError("Email and password are required.");
-      return;
-    }
-
-    setPending(true);
-
-    try {
-      const supabase = createSupabaseBrowserClient();
-      const { data, error: signInError } =
-        await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-
-      if (signInError) {
-        setError(signInError.message);
-        return;
-      }
-
-      if (process.env.NODE_ENV === "development") {
-        console.debug("[supabase-auth] browser sign-in completed", {
-          hasSession: Boolean(data.session),
-          hasUser: Boolean(data.user),
-        });
-      }
-
-      setMessage("Signed in. Opening your dashboard...");
-      router.replace(nextPath);
-      router.refresh();
-    } catch {
-      setError("Unable to sign in. Please try again.");
-    } finally {
-      setPending(false);
-    }
-  }
+  const [state, formAction, pending] = useActionState(loginAction, initialState);
 
   return (
     <form
-      onSubmit={handleSubmit}
+      action={formAction}
       className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm"
     >
       <input type="hidden" name="redirectTo" value={redirectTo} />
@@ -110,18 +52,18 @@ export function LoginForm({ configured, redirectTo }: LoginFormProps) {
         />
       </div>
 
-      {error && (
+      {state.error && (
         <p
           role="alert"
           className="mt-4 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-800"
         >
-          {error}
+          {state.error}
         </p>
       )}
 
-      {message && (
+      {state.message && (
         <p className="mt-4 rounded-lg border border-teal-200 bg-teal-50 px-4 py-3 text-sm font-medium text-teal-900">
-          {message}
+          {state.message}
         </p>
       )}
 
