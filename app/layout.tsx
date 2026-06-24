@@ -1,10 +1,13 @@
 import type { Metadata } from "next";
+import { getPublicAppUrl } from "@/lib/app-url";
 import { SiteFooter } from "./components/site-footer";
 import { SiteHeader } from "./components/site-header";
 import "./globals.css";
 
+const appUrl = getPublicAppUrl();
+
 export const metadata: Metadata = {
-  metadataBase: new URL("https://web-exposure-check.vercel.app"),
+  metadataBase: new URL(appUrl),
   title: {
     default: "Web Exposure Check | Website Security Scanner",
     template: "%s | Web Exposure Check",
@@ -26,7 +29,7 @@ export const metadata: Metadata = {
     title: "Web Exposure Check",
     description:
       "Analyze basic SSL, email security and public website risks before they become real problems.",
-    url: "https://web-exposure-check.vercel.app",
+    url: appUrl,
     siteName: "Web Exposure Check",
     type: "website",
   },

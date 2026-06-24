@@ -7,6 +7,10 @@ Run that migration manually in the Supabase SQL editor for now. Generated
 Supabase TypeScript types can replace the handwritten types in
 `lib/types/database.ts` after the project is linked to a Supabase instance.
 
+For production readiness, apply migrations in order and keep previously applied
+migrations immutable. MVP 2.1.2 did not require a schema change, so there is no
+`002_production_readiness_fixes.sql` migration.
+
 ## Row Level Security
 
 RLS is enabled on all MVP 2.1 tables. Policies allow authenticated users to read
@@ -15,6 +19,14 @@ and write only rows belonging to organizations where they are members. The
 
 The organization owner can also read the organization they created before the
 owner membership row exists.
+
+Current MVP tables covered by RLS:
+
+- `organizations`
+- `organization_members`
+- `domains`
+- `scan_results`
+- `findings`
 
 ## users
 

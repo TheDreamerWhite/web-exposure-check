@@ -41,6 +41,14 @@ MVP 2.1 adds Supabase Auth through:
 `/login`. Dashboard server code still verifies the current user before loading
 or mutating organization data.
 
+Supabase Auth redirect settings must match each deployed environment:
+
+- Local Site URL: `http://localhost:3000`
+- Local Additional Redirect URLs: `http://localhost:3000/**`
+- Vercel Site URL: `https://your-vercel-domain.vercel.app`
+- Vercel Additional Redirect URLs: `https://your-vercel-domain.vercel.app/**`
+- Future custom domain redirect example: `https://app.webexposurecheck.com/**`
+
 ## SaaS Dashboard
 
 The dashboard routes live under `/dashboard`:
@@ -82,6 +90,29 @@ The MVP 2.1 database stores:
 
 The migration at `supabase/migrations/001_saas_foundation.sql` enables RLS on
 all tables and adds policies scoped to organization members.
+
+The current production readiness pass does not require a second migration. If a
+future Supabase project has already run `001_saas_foundation.sql`, new schema
+changes should be added as follow-up numbered migrations rather than rewriting
+the existing migration in place.
+
+## Vercel Runtime Configuration
+
+Production deployments should configure these variables in Vercel Project
+Settings -> Environment Variables:
+
+- `NEXT_PUBLIC_APP_URL`
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+- `SUPABASE_SECRET_KEY`
+
+`NEXT_PUBLIC_*` values are intentionally visible to browser code. The Supabase
+secret key is server-only and is used only from files guarded by `server-only` or
+from route handlers that never return secret values.
+
+`/api/env-check` can be used as a safe deployment diagnostic. It returns boolean
+presence checks for required environment variables and never returns their
+contents.
 
 ## Future Scheduled Scanner
 

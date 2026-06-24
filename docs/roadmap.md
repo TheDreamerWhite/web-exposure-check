@@ -50,6 +50,16 @@ Status: current.
   membership row
 - Keep domain management blocked until workspace setup is complete
 
+### MVP 2.1.2: Production Supabase Environment Readiness
+
+Status: current.
+
+- Keep Supabase public config separate from server-only secret config
+- Document Supabase Auth redirect URLs for local, Vercel, and custom domains
+- Document Vercel environment variable setup
+- Add a boolean-only environment diagnostic endpoint
+- Add a production readiness checklist for future deployment
+
 ## MVP 2.2: Domain Verification
 
 - Add DNS TXT or file-based domain verification

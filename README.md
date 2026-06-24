@@ -53,6 +53,7 @@ MVP 2.1 replaces the dashboard's localStorage-only data model with Supabase:
 4. Fill in the Supabase values:
 
 ```bash
+NEXT_PUBLIC_APP_URL=
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
 SUPABASE_SECRET_KEY=
@@ -65,6 +66,14 @@ If email confirmation is enabled in Supabase Auth, signup may show a confirmatio
 message instead of immediately creating the organization. Confirm the email,
 sign in, and the dashboard will route you to `/dashboard/onboarding` to create
 the workspace.
+
+Configure Supabase Auth URL settings before testing signup redirects:
+
+- Local Site URL: `http://localhost:3000`
+- Local Additional Redirect URLs: `http://localhost:3000/**`
+- Vercel Site URL: `https://your-vercel-domain.vercel.app`
+- Vercel Additional Redirect URLs: `https://your-vercel-domain.vercel.app/**`
+- Future custom domain redirect example: `https://app.webexposurecheck.com/**`
 
 ## Environment Variables
 
@@ -81,7 +90,18 @@ Placeholders are listed in `.env.example`:
 - `CRON_SECRET`
 
 Only the Supabase public URL/key are intended for client-side use. All service
-keys must remain server-only.
+keys must remain server-only. `NEXT_PUBLIC_*` variables are safe for browser
+exposure because they are bundled into client-side code. `SUPABASE_SECRET_KEY`
+must never be imported by client components or exposed in API responses.
+
+Optional server diagnostic:
+
+```text
+GET /api/env-check
+```
+
+This route returns boolean presence checks only. It does not return environment
+variable values.
 
 ## Local Development
 
@@ -181,8 +201,29 @@ npm.cmd run lint
 npm.cmd run build
 ```
 
-Set Supabase environment variables in Vercel project settings. Do not expose
-`SUPABASE_SECRET_KEY` to browser code.
+Set production environment variables in Vercel under Project Settings ->
+Environment Variables:
+
+- `NEXT_PUBLIC_APP_URL`
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+- `SUPABASE_SECRET_KEY`
+
+Future integrations will also need:
+
+- `RESEND_API_KEY`
+- `OPENAI_API_KEY`
+- `STRIPE_SECRET_KEY`
+- `STRIPE_WEBHOOK_SECRET`
+- `CRON_SECRET`
+
+Use `NEXT_PUBLIC_APP_URL=https://your-vercel-domain.vercel.app` for the first
+Vercel deployment, or `NEXT_PUBLIC_APP_URL=https://production-domain.example`
+as the template for a future custom production domain. Never commit
+`.env.local`. Do not expose `SUPABASE_SECRET_KEY` to browser code.
+
+See [docs/production-readiness.md](docs/production-readiness.md) for the full
+Supabase and Vercel pre-deployment checklist.
 
 ## Roadmap
 
