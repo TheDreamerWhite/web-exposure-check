@@ -39,8 +39,8 @@ export const reportUiCopy: Record<
     fixDifficulty: "Fix difficulty",
     estimatedFixTime: "Estimated fix time",
     fixSteps: "Fix steps",
-    copyForTechnician: "Copy for technician",
-    copied: "Technician note copied.",
+    copyForTechnician: "Copy message for technician",
+    copied: "Copied technician instructions.",
     technicalResults: "Original technical results",
     technicalIntro:
       "These are the raw scanner results. They are kept for the website technician and are secondary to the business report above.",

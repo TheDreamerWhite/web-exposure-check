@@ -1,12 +1,13 @@
 import Link from "next/link";
 
 const footerLinks = [
+  { href: "/scan", label: "Scan" },
+  { href: "/demo-report", label: "Demo Report" },
   { href: "/features", label: "Features" },
   { href: "/dashboard", label: "Dashboard" },
   { href: "/about", label: "About" },
   { href: "/privacy", label: "Privacy" },
   { href: "/terms", label: "Terms" },
-  { href: "/scan", label: "Scan" },
 ];
 
 export function SiteFooter() {
@@ -17,9 +18,9 @@ export function SiteFooter() {
           <Link href="/" className="text-base font-semibold text-slate-950">
             Web Exposure Check
           </Link>
-          <p className="mt-3 max-w-xl text-sm leading-6 text-slate-600">
-            A lightweight public exposure scanner for quick checks of web, email,
-            and browser-facing security signals.
+          <p className="mt-3 max-w-xl text-sm leading-6 text-slate-500">
+            Website security reports that translate public technical checks into
+            business impact and fix instructions for technicians.
           </p>
         </div>
 
@@ -36,9 +37,9 @@ export function SiteFooter() {
         </nav>
       </div>
 
-      <div className="border-t border-slate-100 px-4 py-5 text-center text-xs text-slate-500">
-        This tool performs basic public checks only and is not a substitute for a
-        professional security audit.
+      <div className="border-t border-slate-100 px-4 py-5 text-center text-sm leading-6 text-slate-500">
+        This tool performs public, non-invasive checks and is not a replacement
+        for a full security audit, penetration test, or code review.
       </div>
     </footer>
   );

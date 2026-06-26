@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import {
   getCheckInfo,
   getCheckTone,
@@ -228,6 +229,7 @@ export default function ScanPage() {
   const [internalNote, setInternalNote] = useState("");
   const [savedReportId, setSavedReportId] = useState("");
   const [saveReportStatus, setSaveReportStatus] = useState("");
+  const [showAnonymousConversion, setShowAnonymousConversion] = useState(false);
 
   useEffect(() => {
     const currentHistory = parseHistory(localStorage.getItem(HISTORY_KEY));
@@ -303,6 +305,7 @@ export default function ScanPage() {
     setExportStatus("");
     setSavedReportId("");
     setSaveReportStatus("");
+    setShowAnonymousConversion(false);
     setResult(null);
     setScanTakingLonger(false);
 
@@ -369,7 +372,8 @@ export default function ScanPage() {
       });
 
       if (response.status === 401) {
-        setSaveReportStatus("Sign in to save this report to dashboard history.");
+        setSaveReportStatus("");
+        setShowAnonymousConversion(true);
         return;
       }
 
@@ -384,6 +388,7 @@ export default function ScanPage() {
 
       setSavedReportId(data.report?.id || "");
       setSaveReportStatus("Saved to dashboard history.");
+      setShowAnonymousConversion(false);
     } catch (saveError) {
       setSaveReportStatus(
         saveError instanceof Error
@@ -411,6 +416,7 @@ export default function ScanPage() {
     setExportStatus("");
     setSavedReportId("");
     setSaveReportStatus("");
+    setShowAnonymousConversion(false);
     setDomain(item.domain);
 
     if (Object.keys(item.checks).length > 0) {
@@ -777,6 +783,48 @@ export default function ScanPage() {
                     </p>
                   )}
                 </section>
+
+                {showAnonymousConversion && (
+                  <section className="rounded-lg border border-teal-200 bg-teal-50 p-5 shadow-sm">
+                    <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+                      <div>
+                        <p className="text-sm font-semibold uppercase tracking-[0.18em] text-teal-800">
+                          Save and prove improvement
+                        </p>
+                        <h2 className="mt-2 text-xl font-bold text-slate-950">
+                          Create a free account to save this report.
+                        </h2>
+                        <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-700">
+                          Create a free account to save this report, re-scan
+                          later, compare improvements, and download
+                          client-ready PDFs. You can keep using the scan result
+                          below without signing up.
+                        </p>
+                      </div>
+                      <div className="flex flex-col gap-3 sm:flex-row lg:flex-col">
+                        <Link
+                          href="/signup"
+                          className="inline-flex items-center justify-center rounded-md bg-slate-950 px-4 py-2 text-sm font-semibold text-white transition hover:bg-teal-800 focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2"
+                        >
+                          Create free account
+                        </Link>
+                        <Link
+                          href="/login"
+                          className="inline-flex items-center justify-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-950 transition hover:border-teal-700 hover:text-teal-800 focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2"
+                        >
+                          Log in
+                        </Link>
+                        <button
+                          type="button"
+                          onClick={() => setShowAnonymousConversion(false)}
+                          className="inline-flex items-center justify-center rounded-md border border-teal-200 bg-teal-50 px-4 py-2 text-sm font-semibold text-teal-900 transition hover:border-teal-700 hover:bg-white focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2"
+                        >
+                          Continue without saving
+                        </button>
+                      </div>
+                    </div>
+                  </section>
+                )}
 
                 {businessReport && (
                   <section className="space-y-4">

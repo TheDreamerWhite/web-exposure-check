@@ -3,11 +3,11 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "About",
   description:
-    "Learn why Web Exposure Check exists and how it approaches public security checks.",
+    "Learn how Web Exposure Check turns public website checks into client-ready security reports.",
 };
 
 const principles = [
-  "Keep the checks public, narrow, and understandable.",
+  "Translate public checks into business language.",
   "Explain risk without overstating certainty.",
   "Encourage responsible testing only on systems you own or administer.",
 ];
@@ -22,22 +22,21 @@ export default function AboutPage() {
               About
             </p>
             <h1 className="mt-4 text-4xl font-bold tracking-normal text-slate-950 sm:text-5xl">
-              A lightweight scanner for first-pass visibility
+              Client-ready website security reports for small businesses
             </h1>
           </div>
 
           <div className="space-y-6 text-base leading-8 text-slate-600">
             <p>
-              Web Exposure Check helps website owners spot common public
-              configuration gaps before they turn into avoidable risk. It
-              focuses on visible signals such as HTTPS behavior, email
-              authentication records, and browser-facing security headers.
+              Web Exposure Check helps website owners and small agencies turn
+              common public configuration checks into reports that business
+              owners can understand and technicians can act on.
             </p>
             <p>
               The goal is not to replace a professional audit, penetration test,
               or code review. The goal is to make the first conversation clearer:
-              what looks healthy, what needs attention, and what should be
-              investigated next.
+              what affects customer trust, who should fix it, and how to prove
+              improvement after a re-scan.
             </p>
           </div>
         </div>
