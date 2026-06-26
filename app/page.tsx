@@ -104,7 +104,7 @@ export default function Home() {
             sizes="50vw"
           />
         </div>
-        <div className="absolute inset-0 bg-gradient-to-r from-slate-50 via-white/90 to-white/70" />
+        <div className="absolute inset-0 bg-gradient-to-r from-slate-50/95 via-white/85 to-slate-100/70" />
 
         <div className="relative z-10 mx-auto max-w-7xl px-6 py-20 sm:py-24 lg:px-8 lg:py-28">
           <div className="max-w-4xl">
@@ -146,7 +146,7 @@ export default function Home() {
             {heroBenefits.map((item) => (
               <article
                 key={item.title}
-                className="rounded-2xl border border-slate-200 bg-white/90 p-6 shadow-[0_10px_30px_rgba(15,23,42,0.08)] backdrop-blur-sm"
+                className="rounded-2xl border border-slate-300 bg-white/95 p-6 shadow-[0_12px_36px_rgba(15,23,42,0.10)] backdrop-blur-sm"
               >
                 <h2 className="text-base font-semibold leading-7 text-slate-900">
                   {item.title}
@@ -308,7 +308,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="border-b border-slate-200 bg-slate-50 py-20">
+      <section className="border-b border-slate-200 bg-white py-20">
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
           <div className="rounded-3xl border border-slate-200 bg-white p-8 shadow-[0_16px_50px_rgba(15,23,42,0.08)] lg:p-10">
             <div className="grid gap-8 lg:grid-cols-[1fr_1fr] lg:items-center">
@@ -348,7 +348,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="border-b border-slate-200 bg-white py-20">
+      <section className="border-b border-slate-200 bg-slate-50 py-20">
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
           <div className="max-w-3xl">
             <p className="mb-4 text-sm font-bold uppercase tracking-[0.3em] text-slate-500">
@@ -367,9 +367,9 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="bg-slate-50 py-20">
+      <section className="bg-white py-20">
         <div className="mx-auto max-w-5xl px-6 lg:px-8">
-          <div className="rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-[0_16px_50px_rgba(15,23,42,0.08)] lg:p-12">
+          <div className="rounded-3xl border border-slate-200 bg-slate-50 p-8 text-center shadow-[0_16px_50px_rgba(15,23,42,0.08)] lg:p-12">
             <p className="text-sm font-bold uppercase tracking-[0.3em] text-slate-500">
               Start with one report
             </p>
