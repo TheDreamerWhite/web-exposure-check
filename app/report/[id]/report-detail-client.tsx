@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { WebsiteReadingEvidence } from "@/components/report/WebsiteReadingEvidence";
 import {
   getCheckInfo,
   getCheckTone,
@@ -533,6 +534,10 @@ export function ReportDetailClient({
             </div>
           </section>
         )}
+
+        <WebsiteReadingEvidence
+          websiteReadResult={report.scan_result.websiteReadResult}
+        />
 
         <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
           <p className="text-sm font-semibold uppercase tracking-[0.18em] text-teal-800">

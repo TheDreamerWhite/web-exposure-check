@@ -1,4 +1,5 @@
 import type { CheckTone } from "@/lib/scan/checks";
+import type { WebsiteReadResult } from "@/lib/reader/types";
 
 export const reportLanguages = ["en", "es", "zh"] as const;
 
@@ -9,6 +10,7 @@ export type ReportScanResult = {
   score: number;
   riskLevel: string;
   checks: Record<string, string>;
+  websiteReadResult?: WebsiteReadResult;
 };
 
 export type ReportRule = {

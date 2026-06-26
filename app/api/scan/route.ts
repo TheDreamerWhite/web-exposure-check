@@ -1,4 +1,6 @@
 import { runExposureScan, ScanInputError } from "@/lib/scan/run-scan";
+import { readWebsite } from "@/lib/reader/read-website";
+import type { WebsiteReadResult } from "@/lib/reader/types";
 
 export const runtime = "nodejs";
 
@@ -12,6 +14,54 @@ async function parseJsonBody(req: Request): Promise<unknown> {
   } catch {
     return null;
   }
+}
+
+function createSafeReaderErrorResult(
+  input: string,
+  error: unknown
+): WebsiteReadResult {
+  const message =
+    error instanceof Error ? error.message : "Website reading failed.";
+
+  return {
+    domain: input.trim(),
+    normalizedUrl: "",
+    fetchedAt: new Date().toISOString(),
+    homepage: {
+      requestedUrl: input,
+      finalUrl: "",
+      status: null,
+      ok: false,
+      contentType: null,
+      headers: {},
+      title: null,
+      metaDescription: null,
+      canonicalUrl: null,
+      htmlLang: null,
+      h1: [],
+      internalLinks: [],
+      externalLinksSample: [],
+    },
+    robots: {
+      url: "",
+      status: null,
+      found: false,
+      sitemapUrls: [],
+      notes: [],
+    },
+    sitemap: {
+      attemptedUrls: [],
+      found: false,
+      urls: [],
+      notes: [],
+    },
+    evidence: {
+      pagesRead: [],
+      pagesDiscovered: [],
+      notes: ["Website reading failed, but the core scan completed."],
+    },
+    errors: [message],
+  };
 }
 
 export async function GET() {
@@ -43,7 +93,19 @@ export async function POST(req: Request) {
       return jsonError("Domain is required.", 400);
     }
 
-    return Response.json(await runExposureScan(rawDomain));
+    const scanResult = await runExposureScan(rawDomain);
+    let websiteReadResult: WebsiteReadResult;
+
+    try {
+      websiteReadResult = await readWebsite(rawDomain);
+    } catch (error) {
+      websiteReadResult = createSafeReaderErrorResult(rawDomain, error);
+    }
+
+    return Response.json({
+      ...scanResult,
+      websiteReadResult,
+    });
   } catch (error) {
     if (error instanceof ScanInputError) {
       return jsonError(error.message, error.status);

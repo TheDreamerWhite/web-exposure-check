@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { WebsiteReadingEvidence } from "@/components/report/WebsiteReadingEvidence";
 import {
   getCheckInfo,
   getCheckTone,
@@ -17,6 +18,7 @@ import {
   type ReportFinding,
   type ReportLanguage,
 } from "@/lib/report/types";
+import type { WebsiteReadResult } from "@/lib/reader/types";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 
 type ScanResult = {
@@ -24,6 +26,7 @@ type ScanResult = {
   score: number;
   riskLevel: string;
   checks: Record<string, string>;
+  websiteReadResult?: WebsiteReadResult;
 };
 
 type HistoryItem = ScanResult & {
@@ -182,6 +185,10 @@ function parseHistory(value: string | null): HistoryItem[] {
         domain: String(item.domain),
         score: Number(item.score),
         riskLevel: String(item.riskLevel),
+        websiteReadResult:
+          item.websiteReadResult && typeof item.websiteReadResult === "object"
+            ? (item.websiteReadResult as WebsiteReadResult)
+            : undefined,
         scannedAt: item.scannedAt ? String(item.scannedAt) : new Date().toISOString(),
         checks:
           item.checks && typeof item.checks === "object"
@@ -479,6 +486,7 @@ export default function ScanPage() {
       riskLevel: result.riskLevel,
       riskExplanation: getRiskExplanation(result),
       businessReport: businessReportExport,
+      websiteReadResult: result.websiteReadResult,
       checks: result.checks,
       suggestedFixes: problemEntries.map(([key]) => getCheckInfo(key).fix),
     };
@@ -825,6 +833,10 @@ export default function ScanPage() {
                     </div>
                   </section>
                 )}
+
+                <WebsiteReadingEvidence
+                  websiteReadResult={result.websiteReadResult}
+                />
 
                 {businessReport && (
                   <section className="space-y-4">
