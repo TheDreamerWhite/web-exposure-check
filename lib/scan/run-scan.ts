@@ -4,6 +4,7 @@ import dns from "dns";
 import net from "net";
 import tls from "tls";
 import { domainToASCII } from "url";
+import type { AiWebsiteUnderstanding } from "@/lib/ai/types";
 import type { WebsiteReadResult } from "@/lib/reader/types";
 
 export type CheckStatus = "OK" | "Missing" | "Warning";
@@ -20,6 +21,7 @@ export type ExposureScanResult = {
   riskLevel: string;
   checks: Record<string, CheckStatus>;
   websiteReadResult?: WebsiteReadResult;
+  aiWebsiteUnderstanding?: AiWebsiteUnderstanding | null;
 };
 
 export class ScanInputError extends Error {

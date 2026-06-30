@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { AiWebsiteUnderstandingSection } from "@/components/report/AiWebsiteUnderstandingSection";
 import { WebsiteReadingEvidence } from "@/components/report/WebsiteReadingEvidence";
 import {
   getCheckInfo,
@@ -537,6 +538,10 @@ export function ReportDetailClient({
 
         <WebsiteReadingEvidence
           websiteReadResult={report.scan_result.websiteReadResult}
+        />
+
+        <AiWebsiteUnderstandingSection
+          aiWebsiteUnderstanding={report.scan_result.aiWebsiteUnderstanding}
         />
 
         <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">

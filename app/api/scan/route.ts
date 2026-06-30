@@ -1,5 +1,7 @@
+import { generateWebsiteUnderstanding } from "@/lib/ai/generate-website-understanding";
 import { runExposureScan, ScanInputError } from "@/lib/scan/run-scan";
 import { readWebsite } from "@/lib/reader/read-website";
+import type { AiWebsiteUnderstanding } from "@/lib/ai/types";
 import type { WebsiteReadResult } from "@/lib/reader/types";
 
 export const runtime = "nodejs";
@@ -102,9 +104,23 @@ export async function POST(req: Request) {
       websiteReadResult = createSafeReaderErrorResult(rawDomain, error);
     }
 
-    return Response.json({
+    const scanResultWithEvidence = {
       ...scanResult,
       websiteReadResult,
+    };
+    let aiWebsiteUnderstanding: AiWebsiteUnderstanding | null = null;
+
+    try {
+      aiWebsiteUnderstanding = await generateWebsiteUnderstanding({
+        scanResult: scanResultWithEvidence,
+      });
+    } catch (error) {
+      console.warn("AI website understanding skipped:", error);
+    }
+
+    return Response.json({
+      ...scanResultWithEvidence,
+      ...(aiWebsiteUnderstanding ? { aiWebsiteUnderstanding } : {}),
     });
   } catch (error) {
     if (error instanceof ScanInputError) {

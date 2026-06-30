@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { AiWebsiteUnderstandingSection } from "@/components/report/AiWebsiteUnderstandingSection";
 import { WebsiteReadingEvidence } from "@/components/report/WebsiteReadingEvidence";
 import {
   getCheckInfo,
@@ -18,6 +19,7 @@ import {
   type ReportFinding,
   type ReportLanguage,
 } from "@/lib/report/types";
+import type { AiWebsiteUnderstanding } from "@/lib/ai/types";
 import type { WebsiteReadResult } from "@/lib/reader/types";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 
@@ -27,6 +29,7 @@ type ScanResult = {
   riskLevel: string;
   checks: Record<string, string>;
   websiteReadResult?: WebsiteReadResult;
+  aiWebsiteUnderstanding?: AiWebsiteUnderstanding | null;
 };
 
 type HistoryItem = ScanResult & {
@@ -188,6 +191,11 @@ function parseHistory(value: string | null): HistoryItem[] {
         websiteReadResult:
           item.websiteReadResult && typeof item.websiteReadResult === "object"
             ? (item.websiteReadResult as WebsiteReadResult)
+            : undefined,
+        aiWebsiteUnderstanding:
+          item.aiWebsiteUnderstanding &&
+          typeof item.aiWebsiteUnderstanding === "object"
+            ? (item.aiWebsiteUnderstanding as AiWebsiteUnderstanding)
             : undefined,
         scannedAt: item.scannedAt ? String(item.scannedAt) : new Date().toISOString(),
         checks:
@@ -487,6 +495,7 @@ export default function ScanPage() {
       riskExplanation: getRiskExplanation(result),
       businessReport: businessReportExport,
       websiteReadResult: result.websiteReadResult,
+      aiWebsiteUnderstanding: result.aiWebsiteUnderstanding,
       checks: result.checks,
       suggestedFixes: problemEntries.map(([key]) => getCheckInfo(key).fix),
     };
@@ -836,6 +845,10 @@ export default function ScanPage() {
 
                 <WebsiteReadingEvidence
                   websiteReadResult={result.websiteReadResult}
+                />
+
+                <AiWebsiteUnderstandingSection
+                  aiWebsiteUnderstanding={result.aiWebsiteUnderstanding}
                 />
 
                 {businessReport && (

@@ -1,4 +1,5 @@
 import type { CheckTone } from "@/lib/scan/checks";
+import type { AiWebsiteUnderstanding } from "@/lib/ai/types";
 import type { WebsiteReadResult } from "@/lib/reader/types";
 
 export const reportLanguages = ["en", "es", "zh"] as const;
@@ -11,6 +12,7 @@ export type ReportScanResult = {
   riskLevel: string;
   checks: Record<string, string>;
   websiteReadResult?: WebsiteReadResult;
+  aiWebsiteUnderstanding?: AiWebsiteUnderstanding | null;
 };
 
 export type ReportRule = {
