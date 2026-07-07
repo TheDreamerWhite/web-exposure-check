@@ -1,6 +1,9 @@
+import { canUseAiWebsiteUnderstanding } from "@/lib/ai/access";
 import { generateWebsiteUnderstanding } from "@/lib/ai/generate-website-understanding";
 import { runExposureScan, ScanInputError } from "@/lib/scan/run-scan";
 import { readWebsite } from "@/lib/reader/read-website";
+import { isSupabaseConfigured } from "@/lib/supabase/config";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { AiWebsiteUnderstanding } from "@/lib/ai/types";
 import type { WebsiteReadResult } from "@/lib/reader/types";
 
@@ -13,6 +16,23 @@ function jsonError(message: string, status: number) {
 async function parseJsonBody(req: Request): Promise<unknown> {
   try {
     return await req.json();
+  } catch {
+    return null;
+  }
+}
+
+async function getAuthenticatedUserEmail() {
+  if (!isSupabaseConfigured()) {
+    return null;
+  }
+
+  try {
+    const supabase = await createSupabaseServerClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    return user?.email ?? null;
   } catch {
     return null;
   }
@@ -109,13 +129,17 @@ export async function POST(req: Request) {
       websiteReadResult,
     };
     let aiWebsiteUnderstanding: AiWebsiteUnderstanding | null = null;
+    const userEmail = await getAuthenticatedUserEmail();
+    const aiAccess = canUseAiWebsiteUnderstanding({ userEmail });
 
-    try {
-      aiWebsiteUnderstanding = await generateWebsiteUnderstanding({
-        scanResult: scanResultWithEvidence,
-      });
-    } catch (error) {
-      console.warn("AI website understanding skipped:", error);
+    if (aiAccess.allowed) {
+      try {
+        aiWebsiteUnderstanding = await generateWebsiteUnderstanding({
+          scanResult: scanResultWithEvidence,
+        });
+      } catch (error) {
+        console.warn("AI website understanding skipped:", error);
+      }
     }
 
     return Response.json({

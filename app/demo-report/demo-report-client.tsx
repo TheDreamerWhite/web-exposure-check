@@ -142,13 +142,13 @@ export function DemoReportClient() {
   }
 
   return (
-    <main className="bg-slate-50">
+    <main className="min-h-screen bg-[#F6F8FB]">
       <section className="border-b border-slate-200 bg-white px-4 py-12 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl">
           <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-end">
             <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.2em] text-teal-800">
-                Public demo report
+              <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">
+                Sample report
               </p>
               <h1 className="mt-3 text-4xl font-bold tracking-normal text-slate-950 sm:text-5xl">
                 A client-ready report for Restaurante Demo.
@@ -191,19 +191,19 @@ export function DemoReportClient() {
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
             <Link
               href="/scan"
-              className="inline-flex items-center justify-center rounded-md bg-slate-950 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-teal-800"
+              className="inline-flex items-center justify-center rounded-md bg-[#0F766E] px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#115E59]"
             >
               Scan your own website
             </Link>
             <Link
               href="/signup"
-              className="inline-flex items-center justify-center rounded-md border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-950 shadow-sm transition hover:border-teal-700 hover:text-teal-800"
+              className="inline-flex items-center justify-center rounded-md border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-950 shadow-sm transition hover:border-slate-400"
             >
               Create free account
             </Link>
             <Link
               href="/dashboard"
-              className="inline-flex items-center justify-center rounded-md border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-950 shadow-sm transition hover:border-teal-700 hover:text-teal-800"
+              className="inline-flex items-center justify-center rounded-md border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-950 shadow-sm transition hover:border-slate-400"
             >
               Open dashboard
             </Link>
@@ -404,7 +404,7 @@ export function DemoReportClient() {
                       <button
                         type="button"
                         onClick={() => copyTechnicianText(finding)}
-                        className="mt-4 w-full rounded-md bg-slate-950 px-4 py-2 text-sm font-semibold text-white transition hover:bg-teal-800 focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2"
+                        className="mt-4 w-full rounded-md bg-[#0F766E] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#115E59] focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2"
                       >
                         Copy message for technician
                       </button>
@@ -480,7 +480,7 @@ export function DemoReportClient() {
                 <button
                   type="button"
                   onClick={downloadDemoPdf}
-                  className="w-full rounded-md bg-slate-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-teal-800 focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2"
+                  className="w-full rounded-md bg-[#0F766E] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#115E59] focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2"
                 >
                   Download demo PDF
                 </button>
@@ -535,16 +535,16 @@ export function DemoReportClient() {
             </div>
           </section>
 
-          <section className="rounded-2xl border border-slate-200 bg-slate-950 p-6 text-white shadow-sm">
+          <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
               <div>
-                <p className="text-sm font-semibold uppercase tracking-[0.18em] text-teal-200">
+                <p className="text-sm font-semibold uppercase tracking-[0.18em] text-slate-500">
                   Try it with your website
                 </p>
-                <h2 className="mt-3 text-2xl font-bold">
+                <h2 className="mt-3 text-2xl font-bold text-slate-950">
                   Turn your next scan into a report a client can use.
                 </h2>
-                <p className="mt-3 text-sm leading-6 text-slate-300">
+                <p className="mt-3 text-sm leading-6 text-slate-600">
                   Public scanning remains available without login. Sign in when
                   you want saved history, comparison, and client-ready PDFs.
                 </p>
@@ -552,19 +552,19 @@ export function DemoReportClient() {
               <div className="flex flex-col gap-3 sm:flex-row">
                 <Link
                   href="/scan"
-                  className="inline-flex items-center justify-center rounded-md bg-white px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-teal-50"
+                  className="inline-flex items-center justify-center rounded-md bg-[#0F766E] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#115E59]"
                 >
                   Scan your own website
                 </Link>
                 <Link
                   href="/signup"
-                  className="inline-flex items-center justify-center rounded-md border border-white/30 px-5 py-3 text-sm font-semibold text-white transition hover:border-teal-200 hover:text-teal-100"
+                  className="inline-flex items-center justify-center rounded-md border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-950 transition hover:border-slate-400"
                 >
                   Create free account
                 </Link>
                 <Link
                   href="/dashboard"
-                  className="inline-flex items-center justify-center rounded-md border border-white/30 px-5 py-3 text-sm font-semibold text-white transition hover:border-teal-200 hover:text-teal-100"
+                  className="inline-flex items-center justify-center rounded-md border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-950 transition hover:border-slate-400"
                 >
                   Open dashboard
                 </Link>

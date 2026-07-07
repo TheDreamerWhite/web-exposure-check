@@ -114,7 +114,7 @@ export default async function DashboardPage() {
           </div>
           <Link
             href="/dashboard/domains/new"
-            className="inline-flex items-center justify-center rounded-md bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-teal-800 focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2"
+            className="inline-flex items-center justify-center rounded-md bg-[#0F766E] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#115E59] focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2"
           >
             Add your first domain
           </Link>

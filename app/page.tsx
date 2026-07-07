@@ -1,20 +1,4 @@
-import Image from "next/image";
 import Link from "next/link";
-
-const heroBenefits = [
-  {
-    title: "No login required",
-    text: "Run a first scan before creating an account.",
-  },
-  {
-    title: "Saved reports after sign in",
-    text: "Keep history, compare fixes, and revisit client work.",
-  },
-  {
-    title: "PDFs for client follow-up",
-    text: "Export reports that are easier to send and explain.",
-  },
-];
 
 const problemCards = [
   {
@@ -92,70 +76,58 @@ const solutionBullets = [
 
 export default function Home() {
   return (
-    <main>
-      <section className="relative overflow-hidden border-b border-slate-200 bg-gradient-to-br from-slate-50 via-white to-slate-100">
-        <div className="pointer-events-none absolute inset-y-0 right-0 hidden w-1/2 opacity-[0.08] lg:block">
-          <Image
-            src="/scan-dashboard-preview.png"
-            alt="Business-friendly website security report preview"
-            fill
-            priority
-            className="object-cover object-left"
-            sizes="50vw"
-          />
-        </div>
-        <div className="absolute inset-0 bg-gradient-to-r from-slate-50/95 via-white/85 to-slate-100/70" />
-
-        <div className="relative z-10 mx-auto max-w-7xl px-6 py-20 sm:py-24 lg:px-8 lg:py-28">
-          <div className="max-w-4xl">
-            <p className="mb-6 text-sm font-bold uppercase tracking-[0.35em] text-teal-700">
-              Client-ready website security reports
+    <main className="dark-product-page min-h-screen">
+      <section className="border-b border-slate-800 bg-[#111827]">
+        <div className="mx-auto grid max-w-7xl gap-10 px-6 py-16 sm:py-18 lg:grid-cols-[minmax(0,1fr)_390px] lg:items-center lg:px-8 lg:py-20">
+          <div className="max-w-3xl">
+            <p className="text-sm font-bold uppercase tracking-[0.3em] text-slate-300">
+              Public beta
             </p>
-            <h1 className="max-w-4xl text-4xl font-black tracking-tight text-slate-950 sm:text-5xl lg:text-6xl">
-              Website security reports your clients can actually understand.
+            <h1 className="mt-5 max-w-3xl text-4xl font-black leading-tight tracking-tight text-white sm:text-5xl lg:text-6xl">
+              Website security, explained clearly.
             </h1>
-            <p className="mt-8 max-w-3xl text-lg leading-8 text-slate-700 sm:text-xl sm:leading-9">
-              Scan a website, translate technical findings into business impact,
-              send clear fix instructions to the technician, re-scan to prove
-              improvement, and export client-ready reports.
+            <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-300">
+              Scan public website exposure, understand the business impact, and
+              get clear remediation steps.
+            </p>
+            <p className="mt-4 text-sm font-medium text-slate-400">
+              Non-invasive public checks. No exploitation. No credentials
+              required.
             </p>
 
-            <div className="mt-10 flex flex-col gap-4 sm:flex-row">
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <Link
-                href="/scan"
-                className="inline-flex items-center justify-center rounded-xl bg-slate-950 px-7 py-4 text-base font-semibold text-white shadow-sm transition hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2"
+                href="/demo"
+                className="inline-flex items-center justify-center rounded-lg bg-[#0F766E] px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#115E59] focus:outline-none focus:ring-2 focus:ring-teal-200 focus:ring-offset-2 focus:ring-offset-[#111827]"
               >
-                Scan my website
+                Scan website
               </Link>
               <Link
                 href="/demo-report"
-                className="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-7 py-4 text-base font-semibold text-slate-950 shadow-sm transition hover:border-slate-400 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-300 focus:ring-offset-2"
+                className="inline-flex items-center justify-center rounded-lg border border-white/20 bg-white/5 px-5 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
               >
-                View demo report
-              </Link>
-              <Link
-                href="/dashboard"
-                className="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-7 py-4 text-base font-semibold text-slate-950 shadow-sm transition hover:border-slate-400 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-300 focus:ring-offset-2"
-              >
-                Open dashboard
+                View sample report
               </Link>
             </div>
           </div>
 
-          <div className="mt-12 grid gap-4 sm:grid-cols-3">
-            {heroBenefits.map((item) => (
-              <article
-                key={item.title}
-                className="rounded-2xl border border-slate-300 bg-white/95 p-6 shadow-[0_12px_36px_rgba(15,23,42,0.10)] backdrop-blur-sm"
-              >
-                <h2 className="text-base font-semibold leading-7 text-slate-900">
-                  {item.title}
-                </h2>
-                <p className="mt-2 text-sm leading-6 text-slate-600">
-                  {item.text}
-                </p>
-              </article>
-            ))}
+          <div className="rounded-[18px] border border-slate-200 bg-white p-5 text-slate-950 shadow-[0_18px_45px_rgba(15,23,42,0.18)]">
+            <h2 className="text-lg font-bold">Check a website</h2>
+            <p className="mt-2 text-sm leading-6 text-slate-600">
+              Start with a clean public scan and readable report.
+            </p>
+            <div className="mt-5 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-500">
+              example.com
+            </div>
+            <Link
+              href="/demo"
+              className="mt-4 inline-flex w-full items-center justify-center rounded-lg bg-[#0F766E] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#115E59]"
+            >
+              Scan website
+            </Link>
+            <p className="mt-4 text-xs leading-5 text-slate-500">
+              Only scan websites you own, manage, or are authorized to assess.
+            </p>
           </div>
         </div>
       </section>
@@ -220,7 +192,7 @@ export default function Home() {
             </div>
             <Link
               href="/demo-report"
-              className="mt-6 inline-flex items-center justify-center rounded-xl bg-slate-950 px-7 py-4 text-base font-semibold text-white shadow-sm transition hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2"
+              className="mt-6 inline-flex items-center justify-center rounded-lg bg-[#0F766E] px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#115E59] focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2"
             >
               See the report format
             </Link>
@@ -244,7 +216,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="border-b border-slate-200 bg-white py-20">
+      <section id="how-it-works" className="border-b border-slate-200 bg-white py-20">
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
           <div className="max-w-3xl">
             <p className="mb-4 text-sm font-bold uppercase tracking-[0.3em] text-slate-500">
@@ -276,7 +248,54 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="border-b border-slate-200 bg-slate-50 py-20">
+      <section id="pricing" className="border-b border-slate-200 bg-slate-50 py-20">
+        <div className="mx-auto max-w-7xl px-6 lg:px-8">
+          <div className="max-w-3xl">
+            <p className="mb-4 text-sm font-bold uppercase tracking-[0.3em] text-slate-500">
+              Pricing
+            </p>
+            <h2 className="text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">
+              Start with a public scan, then save reports when you need history.
+            </h2>
+            <p className="mt-4 text-base leading-7 text-slate-600">
+              The public beta supports first-pass checks without credentials.
+              Account-based report history, comparison, and client-ready PDFs
+              are available through the dashboard.
+            </p>
+          </div>
+
+          <div className="mt-10 grid gap-4 md:grid-cols-3">
+            {[
+              {
+                title: "Public scan",
+                text: "Run a non-invasive website exposure check without creating an account.",
+              },
+              {
+                title: "Saved reports",
+                text: "Sign in to keep scan history, compare improvements, and export reports.",
+              },
+              {
+                title: "Agency workflow",
+                text: "Prepare client-ready reports and technician handoffs for authorized domains.",
+              },
+            ].map((item) => (
+              <article
+                key={item.title}
+                className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
+              >
+                <h3 className="text-lg font-semibold text-slate-950">
+                  {item.title}
+                </h3>
+                <p className="mt-3 text-sm leading-6 text-slate-600">
+                  {item.text}
+                </p>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="border-b border-slate-200 bg-white py-20">
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
           <div className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
             <div className="max-w-3xl">
@@ -382,16 +401,16 @@ export default function Home() {
             </p>
             <div className="mt-8 flex flex-col justify-center gap-4 sm:flex-row">
               <Link
-                href="/scan"
-                className="inline-flex items-center justify-center rounded-xl bg-slate-950 px-7 py-4 text-base font-semibold text-white shadow-sm transition hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2"
+                href="/demo"
+                className="inline-flex items-center justify-center rounded-lg bg-[#0F766E] px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#115E59] focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2"
               >
-                Scan my website
+                Scan website
               </Link>
               <Link
                 href="/demo-report"
-                className="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-7 py-4 text-base font-semibold text-slate-950 shadow-sm transition hover:border-slate-400 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-300 focus:ring-offset-2"
+                className="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-950 shadow-sm transition hover:border-slate-400 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-300 focus:ring-offset-2"
               >
-                View demo report
+                View sample report
               </Link>
             </div>
           </div>

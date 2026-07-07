@@ -46,10 +46,10 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   const pageMessage = getPageMessage(params.message, params.loggedOut);
 
   return (
-    <main className="bg-slate-100 px-4 py-12 sm:px-6 lg:px-8">
+    <main className="bg-[#F6F8FB] px-4 py-12 sm:px-6 lg:px-8">
       <div className="mx-auto grid max-w-5xl gap-6 lg:grid-cols-[minmax(0,1fr)_420px] lg:items-start">
-        <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-teal-800">
+        <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">
             Secure workspace
           </p>
           <h1 className="mt-3 text-3xl font-bold text-slate-950">

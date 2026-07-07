@@ -1,12 +1,25 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f7faf9;
-  --foreground: #0f172a;
-  --muted: #475569;
-  --surface: #ffffff;
-  --brand: #0f766e;
-  --brand-strong: #115e59;
+  --background: #F6F8FB;
+  --surface: #FFFFFF;
+  --surface-muted: #EEF2F6;
+  --text-primary: #101828;
+  --text-secondary: #667085;
+  --border: #E4E7EC;
+  --nav-background: #111827;
+  --nav-text: #F9FAFB;
+  --primary: #0F766E;
+  --primary-hover: #115E59;
+  --primary-soft: #CCFBF1;
+  --success: #15803D;
+  --warning: #B45309;
+  --danger: #B42318;
+
+  --foreground: var(--text-primary);
+  --muted: var(--text-secondary);
+  --brand: var(--primary);
+  --brand-strong: var(--primary-hover);
 }
 
 @theme inline {
@@ -42,4 +55,13 @@ a {
 ::selection {
   background: #99f6e4;
   color: #042f2e;
+}
+
+.dark-product-page {
+  background: var(--background);
+  color: var(--text-primary);
+}
+
+.site-avatar-menu summary::-webkit-details-marker {
+  display: none;
 }

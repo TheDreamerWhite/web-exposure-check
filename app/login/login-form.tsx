@@ -17,7 +17,7 @@ export function LoginForm({ configured, redirectTo }: LoginFormProps) {
   return (
     <form
       action={formAction}
-      className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm"
+      className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
     >
       <input type="hidden" name="redirectTo" value={redirectTo} />
 
@@ -70,7 +70,7 @@ export function LoginForm({ configured, redirectTo }: LoginFormProps) {
       <button
         type="submit"
         disabled={!configured || pending}
-        className="mt-6 w-full rounded-md bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-teal-800 focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-600"
+        className="mt-6 w-full rounded-md bg-[#0F766E] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#115E59] focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-600"
       >
         {pending ? "Signing in..." : "Sign in"}
       </button>
