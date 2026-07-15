@@ -8,6 +8,7 @@ import type {
   FindingStatuses,
   ScanReportRecord,
 } from "./types";
+import { withVerifiedFindings } from "@/lib/findings/compatibility";
 
 function normalizeOptionalText(value?: string | null) {
   const trimmed = value?.trim();
@@ -17,9 +18,27 @@ function normalizeOptionalText(value?: string | null) {
 
 export function coerceScanReportRecord(row: unknown): ScanReportRecord {
   const report = row as ScanReportRecord;
+  let generatedReport = report.generated_report;
+
+  if (
+    generatedReport &&
+    !generatedReport.verifiedFindings &&
+    report.scan_result &&
+    Array.isArray(generatedReport.findings)
+  ) {
+    try {
+      generatedReport = withVerifiedFindings(
+        report.scan_result,
+        generatedReport
+      );
+    } catch (error) {
+      console.warn("Unable to hydrate verified findings for stored report:", error);
+    }
+  }
 
   return {
     ...report,
+    generated_report: generatedReport,
     finding_statuses:
       report.finding_statuses && typeof report.finding_statuses === "object"
         ? report.finding_statuses

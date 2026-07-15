@@ -4,6 +4,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { AiWebsiteUnderstandingSection } from "@/components/report/AiWebsiteUnderstandingSection";
+import {
+  VerifiedFindingDetails,
+  VerifiedFindingsOverview,
+} from "@/components/report/VerifiedFindings";
 import { WebsiteReadingEvidence } from "@/components/report/WebsiteReadingEvidence";
 import {
   getCheckInfo,
@@ -114,6 +118,10 @@ export function ReportDetailClient({
   const uiCopy = reportUiCopy[report.generated_report.language];
   const riskFindings = report.generated_report.riskFindings;
   const passedFindings = report.generated_report.passedFindings;
+  const verifiedSnapshot = report.generated_report.verifiedFindings;
+  const verifiedFindingsByCheckKey = new Map(
+    verifiedSnapshot?.findings.map((finding) => [finding.checkKey, finding]) || []
+  );
 
   async function updateFindingStatus(
     checkKey: string,
@@ -370,14 +378,22 @@ export function ReportDetailClient({
           {report.generated_report.summary}
         </section>
 
+        {verifiedSnapshot && (
+          <VerifiedFindingsOverview snapshot={verifiedSnapshot} />
+        )}
+
         <section className="space-y-4">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.18em] text-teal-800">
               {uiCopy.reportTitle}
             </p>
             <h2 className="mt-2 text-2xl font-bold text-slate-950">
-              Business risk cards
+              Prioritized findings
             </h2>
+            <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
+              Review the highest-value actions first. Findings that still need
+              evidence are clearly separated from confirmed observations.
+            </p>
           </div>
 
           {riskFindings.length === 0 ? (
@@ -394,6 +410,9 @@ export function ReportDetailClient({
               {riskFindings.map((finding) => {
                 const workflowStatus =
                   findingStatuses[finding.checkKey] || "open";
+                const verifiedFinding = verifiedFindingsByCheckKey.get(
+                  finding.checkKey
+                );
 
                 return (
                   <article
@@ -436,6 +455,10 @@ export function ReportDetailClient({
                         </select>
                       </div>
                     </div>
+
+                    {verifiedFinding && (
+                      <VerifiedFindingDetails finding={verifiedFinding} />
+                    )}
 
                     <div className="mt-5 grid gap-3 md:grid-cols-3">
                       <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
