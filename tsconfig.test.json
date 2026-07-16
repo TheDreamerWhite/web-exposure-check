@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "CommonJS",
+    "moduleResolution": "Node",
+    "strict": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./*"]
+    },
+    "rootDir": ".",
+    "outDir": ".test-dist",
+    "noEmit": false,
+    "incremental": false,
+    "types": ["node"]
+  },
+  "include": [
+    "lib/findings/**/*.ts",
+    "tests/findings/**/*.ts"
+  ]
+}

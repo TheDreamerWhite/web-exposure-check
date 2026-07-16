@@ -3,6 +3,10 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import {
+  VerifiedFindingDetails,
+  VerifiedFindingsOverview,
+} from "@/components/report/VerifiedFindings";
+import {
   getCheckInfo,
   getCheckTone,
   orderedCheckEntries,
@@ -32,6 +36,47 @@ const demoScanResult: ReportScanResult = {
     hsts: "Missing",
     csp: "Missing",
     xFrameOptions: "OK",
+  },
+  websiteReadResult: {
+    domain: "restaurante-demo.com",
+    normalizedUrl: "https://restaurante-demo.com/",
+    fetchedAt: "2026-06-25T09:30:00.000Z",
+    homepage: {
+      requestedUrl: "https://restaurante-demo.com/",
+      finalUrl: "https://restaurante-demo.com/",
+      status: 200,
+      ok: true,
+      contentType: "text/html",
+      headers: {
+        "x-frame-options": "SAMEORIGIN",
+      },
+      title: "Restaurante Demo",
+      metaDescription: "Public sample website for the report demo.",
+      canonicalUrl: "https://restaurante-demo.com/",
+      htmlLang: "es",
+      h1: ["Restaurante Demo"],
+      internalLinks: [],
+      externalLinksSample: [],
+    },
+    robots: {
+      url: "https://restaurante-demo.com/robots.txt",
+      status: 200,
+      found: true,
+      sitemapUrls: [],
+      notes: [],
+    },
+    sitemap: {
+      attemptedUrls: ["https://restaurante-demo.com/sitemap.xml"],
+      found: false,
+      urls: [],
+      notes: ["No sitemap was included in this static sample."],
+    },
+    evidence: {
+      pagesRead: ["https://restaurante-demo.com/"],
+      pagesDiscovered: [],
+      notes: ["Static public sample evidence."],
+    },
+    errors: [],
   },
 };
 
@@ -103,6 +148,12 @@ export function DemoReportClient() {
     [language]
   );
   const uiCopy = reportUiCopy[language];
+  const verifiedFindingsByCheckKey = new Map(
+    report.verifiedFindings.findings.map((finding) => [
+      finding.checkKey,
+      finding,
+    ])
+  );
 
   async function copyTechnicianText(finding: ReportFinding) {
     try {
@@ -302,6 +353,8 @@ export function DemoReportClient() {
             </article>
           </section>
 
+          <VerifiedFindingsOverview snapshot={report.verifiedFindings} />
+
           <section className="space-y-4">
             <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
               <div>
@@ -349,6 +402,12 @@ export function DemoReportClient() {
                       <p className="mt-3 text-sm leading-6 text-slate-600">
                         {finding.explanation}
                       </p>
+
+                      {verifiedFindingsByCheckKey.has(finding.checkKey) && (
+                        <VerifiedFindingDetails
+                          finding={verifiedFindingsByCheckKey.get(finding.checkKey)!}
+                        />
+                      )}
 
                       <div className="mt-5 grid gap-3 md:grid-cols-3">
                         <div>

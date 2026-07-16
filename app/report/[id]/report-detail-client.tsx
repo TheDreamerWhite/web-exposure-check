@@ -4,7 +4,12 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { AiWebsiteUnderstandingSection } from "@/components/report/AiWebsiteUnderstandingSection";
+import {
+  VerifiedFindingDetails,
+  VerifiedFindingsOverview,
+} from "@/components/report/VerifiedFindings";
 import { WebsiteReadingEvidence } from "@/components/report/WebsiteReadingEvidence";
+import { VerificationLoop } from "@/components/report/VerificationLoop";
 import {
   getCheckInfo,
   getCheckTone,
@@ -114,6 +119,11 @@ export function ReportDetailClient({
   const uiCopy = reportUiCopy[report.generated_report.language];
   const riskFindings = report.generated_report.riskFindings;
   const passedFindings = report.generated_report.passedFindings;
+  const verifiedSnapshot = report.generated_report.verifiedFindings;
+  const verification = report.generated_report.verification;
+  const verifiedFindingsByCheckKey = new Map(
+    verifiedSnapshot?.findings.map((finding) => [finding.checkKey, finding]) || []
+  );
 
   async function updateFindingStatus(
     checkKey: string,
@@ -313,56 +323,70 @@ export function ReportDetailClient({
               </div>
             </div>
 
-            <div className="mt-5 grid gap-3 md:grid-cols-4">
-              <div className="rounded-lg border border-teal-200 bg-teal-50 p-4">
-                <p className="text-sm font-semibold text-teal-900">Fixed</p>
-                <p className="mt-2 text-2xl font-black text-teal-950">
-                  {comparison.fixed.length}
-                </p>
-              </div>
-              <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
-                <p className="text-sm font-semibold text-amber-900">
-                  Still needs work
-                </p>
-                <p className="mt-2 text-2xl font-black text-amber-950">
-                  {comparison.stillNeedsWork.length}
-                </p>
-              </div>
-              <div className="rounded-lg border border-rose-200 bg-rose-50 p-4">
-                <p className="text-sm font-semibold text-rose-900">New issue</p>
-                <p className="mt-2 text-2xl font-black text-rose-950">
-                  {comparison.newIssues.length}
-                </p>
-              </div>
-              <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-                <p className="text-sm font-semibold text-slate-700">No change</p>
-                <p className="mt-2 text-2xl font-black text-slate-950">
-                  {comparison.noChange.length}
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-5 grid gap-3 md:grid-cols-2">
-              {comparison.checks.map((check) => (
-                <article
-                  key={check.checkKey}
-                  className="rounded-lg border border-slate-200 bg-white p-4"
-                >
-                  <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
-                    <h3 className="font-semibold text-slate-950">
-                      {getCheckInfo(check.checkKey).label}
-                    </h3>
-                    <span className="w-fit rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-xs font-bold text-slate-700">
-                      {check.status}
-                    </span>
+            {verification ? (
+              <VerificationLoop verification={verification} />
+            ) : (
+              <>
+                <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+                  <div className="rounded-lg border border-teal-200 bg-teal-50 p-4">
+                    <p className="text-sm font-semibold text-teal-900">Fixed and verified</p>
+                    <p className="mt-2 text-2xl font-black text-teal-950">
+                      {comparison.fixedAndVerified.length}
+                    </p>
                   </div>
-                  <p className="mt-2 text-sm leading-6 text-slate-600">
-                    Previous: {check.previousStatus} | Current:{" "}
-                    {check.currentStatus}
-                  </p>
-                </article>
-              ))}
-            </div>
+                  <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
+                    <p className="text-sm font-semibold text-blue-900">Observed pass</p>
+                    <p className="mt-2 text-2xl font-black text-blue-950">
+                      {comparison.observedPass.length}
+                    </p>
+                  </div>
+                  <div className="rounded-lg border border-rose-200 bg-rose-50 p-4">
+                    <p className="text-sm font-semibold text-rose-900">Regressed</p>
+                    <p className="mt-2 text-2xl font-black text-rose-950">
+                      {comparison.regressed.length}
+                    </p>
+                  </div>
+                  <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+                    <p className="text-sm font-semibold text-amber-900">Still needs work</p>
+                    <p className="mt-2 text-2xl font-black text-amber-950">
+                      {comparison.stillNeedsWork.length}
+                    </p>
+                  </div>
+                  <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                    <p className="text-sm font-semibold text-slate-700">New finding</p>
+                    <p className="mt-2 text-2xl font-black text-slate-950">
+                      {comparison.newFindings.length}
+                    </p>
+                  </div>
+                </div>
+
+                <p className="mt-4 text-sm leading-6 text-slate-600">
+                  This older comparison has no stored verification transition. Improvements are shown as observed passes, not verified fixes.
+                </p>
+
+                <div className="mt-5 grid gap-3 md:grid-cols-2">
+                  {comparison.checks.map((check) => (
+                    <article
+                      key={check.checkKey}
+                      className="min-w-0 rounded-lg border border-slate-200 bg-white p-4"
+                    >
+                      <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
+                        <h3 className="font-semibold text-slate-950">
+                          {getCheckInfo(check.checkKey).label}
+                        </h3>
+                        <span className="w-fit rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-xs font-bold text-slate-700">
+                          {check.status}
+                        </span>
+                      </div>
+                      <p className="mt-2 break-words text-sm leading-6 text-slate-600">
+                        Previous: {check.previousStatus} | Current:{" "}
+                        {check.currentStatus}
+                      </p>
+                    </article>
+                  ))}
+                </div>
+              </>
+            )}
           </section>
         )}
 
@@ -370,14 +394,22 @@ export function ReportDetailClient({
           {report.generated_report.summary}
         </section>
 
+        {verifiedSnapshot && (
+          <VerifiedFindingsOverview snapshot={verifiedSnapshot} />
+        )}
+
         <section className="space-y-4">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.18em] text-teal-800">
               {uiCopy.reportTitle}
             </p>
             <h2 className="mt-2 text-2xl font-bold text-slate-950">
-              Business risk cards
+              Prioritized findings
             </h2>
+            <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">
+              Review the highest-value actions first. Findings that still need
+              evidence are clearly separated from confirmed observations.
+            </p>
           </div>
 
           {riskFindings.length === 0 ? (
@@ -394,6 +426,9 @@ export function ReportDetailClient({
               {riskFindings.map((finding) => {
                 const workflowStatus =
                   findingStatuses[finding.checkKey] || "open";
+                const verifiedFinding = verifiedFindingsByCheckKey.get(
+                  finding.checkKey
+                );
 
                 return (
                   <article
@@ -436,6 +471,10 @@ export function ReportDetailClient({
                         </select>
                       </div>
                     </div>
+
+                    {verifiedFinding && (
+                      <VerifiedFindingDetails finding={verifiedFinding} />
+                    )}
 
                     <div className="mt-5 grid gap-3 md:grid-cols-3">
                       <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">

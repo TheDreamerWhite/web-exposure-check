@@ -10,10 +10,12 @@ import {
 } from "./reportRules";
 import type {
   BusinessSecurityReport,
+  BusinessSecurityReportWithVerifiedFindings,
   ReportFinding,
   ReportLanguage,
   ReportScanResult,
 } from "./types";
+import { withVerifiedFindings } from "@/lib/findings/compatibility";
 
 function getSummaryKey(scanResult: ReportScanResult) {
   const risk = scanResult.riskLevel.toLowerCase();
@@ -51,7 +53,7 @@ function getStatusLabel(language: ReportLanguage, tone: CheckTone) {
 export function generateBusinessReport(
   scanResult: ReportScanResult,
   language: ReportLanguage
-): BusinessSecurityReport {
+): BusinessSecurityReportWithVerifiedFindings {
   const findings = orderedCheckEntries(scanResult.checks).map(([checkKey, status]) => {
     const tone = getCheckTone(status);
     const rule = getReportRule(checkKey, language);
@@ -70,7 +72,7 @@ export function generateBusinessReport(
     };
   });
 
-  return {
+  const report: BusinessSecurityReport = {
     language,
     domain: scanResult.domain,
     score: scanResult.score,
@@ -80,4 +82,6 @@ export function generateBusinessReport(
     riskFindings: findings.filter((finding) => !finding.passed),
     passedFindings: findings.filter((finding) => finding.passed),
   };
+
+  return withVerifiedFindings(scanResult, report);
 }

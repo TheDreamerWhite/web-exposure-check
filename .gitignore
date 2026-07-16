@@ -13,6 +13,7 @@
 
 # testing
 /coverage
+/.test-dist
 
 # next.js
 /.next/

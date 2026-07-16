@@ -2,6 +2,10 @@
 
 import Link from "next/link";
 import { AiWebsiteUnderstandingSection } from "@/components/report/AiWebsiteUnderstandingSection";
+import {
+  VerifiedFindingDetails,
+  VerifiedFindingsOverview,
+} from "@/components/report/VerifiedFindings";
 import { WebsiteReadingEvidence } from "@/components/report/WebsiteReadingEvidence";
 import {
   getCheckInfo,
@@ -287,6 +291,16 @@ export default function ScanPage() {
   const businessReport = useMemo(
     () => (result ? generateBusinessReport(result, reportLanguage) : null),
     [result, reportLanguage]
+  );
+  const verifiedFindingsByCheckKey = useMemo(
+    () =>
+      new Map(
+        businessReport?.verifiedFindings.findings.map((finding) => [
+          finding.checkKey,
+          finding,
+        ]) || []
+      ),
+    [businessReport]
   );
   const uiCopy = reportUiCopy[reportLanguage];
 
@@ -853,6 +867,10 @@ export default function ScanPage() {
 
                 {businessReport && (
                   <section className="space-y-4">
+                    <VerifiedFindingsOverview
+                      snapshot={businessReport.verifiedFindings}
+                    />
+
                     <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
                       <div>
                         <p className="text-sm font-semibold uppercase tracking-[0.18em] text-teal-800">
@@ -911,6 +929,14 @@ export default function ScanPage() {
                                 {finding.status}
                               </span>
                             </div>
+
+                            {verifiedFindingsByCheckKey.has(finding.checkKey) && (
+                              <VerifiedFindingDetails
+                                finding={verifiedFindingsByCheckKey.get(
+                                  finding.checkKey
+                                )!}
+                              />
+                            )}
 
                             <div className="mt-5 grid gap-3 md:grid-cols-3">
                               <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
@@ -992,7 +1018,7 @@ export default function ScanPage() {
                         <h3 className="text-lg font-bold text-slate-950">
                           {uiCopy.passedChecks}
                         </h3>
-                        <div className="mt-4 grid gap-3 md:grid-cols-2">
+                        <div className="mt-4 grid gap-3">
                           {businessReport.passedFindings.map((finding) => (
                             <article
                               key={finding.checkKey}
@@ -1011,6 +1037,13 @@ export default function ScanPage() {
                                   {finding.statusLabel}
                                 </span>
                               </div>
+                              {verifiedFindingsByCheckKey.has(finding.checkKey) && (
+                                <VerifiedFindingDetails
+                                  finding={verifiedFindingsByCheckKey.get(
+                                    finding.checkKey
+                                  )!}
+                                />
+                              )}
                             </article>
                           ))}
                         </div>
