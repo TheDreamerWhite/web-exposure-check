@@ -1,7 +1,10 @@
 import type { CheckTone } from "@/lib/scan/checks";
 import type { AiWebsiteUnderstanding } from "@/lib/ai/types";
 import type { WebsiteReadResult } from "@/lib/reader/types";
-import type { VerifiedFindingsSnapshot } from "@/lib/findings/types";
+import type {
+  VerificationReconciliation,
+  VerifiedFindingsSnapshot,
+} from "@/lib/findings/types";
 
 export const reportLanguages = ["en", "es", "zh"] as const;
 
@@ -46,6 +49,7 @@ export type BusinessSecurityReport = {
   riskFindings: ReportFinding[];
   passedFindings: ReportFinding[];
   verifiedFindings?: VerifiedFindingsSnapshot;
+  verification?: VerificationReconciliation;
 };
 
 export type BusinessSecurityReportWithVerifiedFindings =

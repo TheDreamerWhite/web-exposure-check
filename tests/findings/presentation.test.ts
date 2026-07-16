@@ -13,6 +13,7 @@ import {
   type PdfExportInput,
 } from "../../lib/report/pdfExport";
 import type {
+  FindingVerificationTransition,
   VerifiedFinding,
   VerifiedFindingsSnapshot,
 } from "../../lib/findings/types";
@@ -168,4 +169,147 @@ test("includes evidence status and limitations in the client PDF text", () => {
   assert.match(pdfText, /Page 1 of/);
   assert.match(pdfText, /Authorized non-invasive public checks only/);
   assert.doesNotMatch(pdfText, /legacy scan|legacy report/i);
+});
+
+test("includes evidence-based verification transitions in the client PDF", () => {
+  const beforeTime = "2026-07-15T10:00:00.000Z";
+  const afterTime = "2026-07-15T11:00:00.000Z";
+  const makeEvidence = (
+    checkKey: string,
+    observedAt: string,
+    value: string,
+    kind: "http_header" | "dns_observation" = "http_header"
+  ) => ({
+    id: `${checkKey}:${observedAt}`,
+    kind,
+    source: kind === "http_header" ? "https://example.com/" : "example.com",
+    observedAt,
+    summary: `${checkKey} returned ${value}.`,
+    value,
+  });
+  const transitions: FindingVerificationTransition[] = [
+    {
+      previousReportId: "previous-report",
+      checkKey: "csp",
+      previousObservedStatus: "Missing",
+      currentObservedStatus: "OK",
+      previousPassed: false,
+      currentPassed: true,
+      previousConfidence: "confirmed",
+      currentConfidence: "confirmed",
+      previousObservationTime: beforeTime,
+      currentObservationTime: afterTime,
+      beforeEvidence: [makeEvidence("csp", beforeTime, "Not observed")],
+      afterEvidence: [makeEvidence("csp", afterTime, "default-src 'self'")],
+      changeType: "fixed_and_verified",
+      resultingVerificationStatus: "fixed_and_verified",
+      verificationReason: "A later confirmed header response proves the change.",
+    },
+    {
+      previousReportId: "previous-report",
+      checkKey: "spf",
+      previousObservedStatus: "Missing",
+      currentObservedStatus: "OK",
+      previousPassed: false,
+      currentPassed: true,
+      previousConfidence: "likely",
+      currentConfidence: "likely",
+      previousObservationTime: beforeTime,
+      currentObservationTime: afterTime,
+      beforeEvidence: [
+        makeEvidence("spf", beforeTime, "Missing", "dns_observation"),
+      ],
+      afterEvidence: [
+        makeEvidence("spf", afterTime, "OK", "dns_observation"),
+      ],
+      changeType: "observed_pass",
+      resultingVerificationStatus: "observed_pass",
+      verificationReason: "The result improved, but the raw DNS answer was not stored.",
+    },
+    {
+      previousReportId: "previous-report",
+      checkKey: "hsts",
+      previousObservedStatus: "OK",
+      currentObservedStatus: "Missing",
+      previousPassed: true,
+      currentPassed: false,
+      previousConfidence: "confirmed",
+      currentConfidence: "confirmed",
+      previousObservationTime: beforeTime,
+      currentObservationTime: afterTime,
+      beforeEvidence: [makeEvidence("hsts", beforeTime, "max-age=31536000")],
+      afterEvidence: [makeEvidence("hsts", afterTime, "Not observed")],
+      changeType: "regressed",
+      resultingVerificationStatus: "regressed",
+      verificationReason: "A later confirmed header response no longer contains HSTS.",
+    },
+  ];
+  const reportFindings = transitions.map((transition) => {
+    const passed = transition.currentPassed;
+
+    return {
+      checkKey: transition.checkKey,
+      title: transition.checkKey.toUpperCase(),
+      explanation: "Test explanation",
+      businessImpact: "Test impact",
+      responsibleOwner: "Web developer",
+      fixDifficulty: "Medium",
+      estimatedFixTime: "One hour",
+      fixSteps: ["Apply the required configuration."],
+      technicianText: "Apply the required configuration.",
+      status: transition.currentObservedStatus,
+      statusLabel: passed ? "Passed" : "Needs attention",
+      tone: passed ? ("ok" as const) : ("bad" as const),
+      passed,
+      copyForTechnician: "Apply the required configuration.",
+    };
+  });
+  const verifiedFindings = transitions.map((transition) =>
+    makeFinding({
+      id: `example.com:${transition.checkKey}`,
+      checkKey: transition.checkKey,
+      title: transition.checkKey.toUpperCase(),
+      observedStatus: transition.currentObservedStatus,
+      passed: transition.currentPassed,
+      tone: transition.currentPassed ? "ok" : "bad",
+      confidence: transition.currentConfidence,
+      priority: transition.currentPassed ? "monitor" : "fix_this_week",
+      priorityScore: transition.currentPassed ? 0 : 65,
+      verificationStatus: transition.resultingVerificationStatus,
+      evidence: transition.afterEvidence,
+    })
+  );
+  const input: PdfExportInput = {
+    scanDate: afterTime,
+    report: {
+      language: "en",
+      domain: "example.com",
+      score: 70,
+      riskLevel: "Medium Risk",
+      summary: "Verification loop test summary.",
+      findings: reportFindings,
+      riskFindings: reportFindings.filter((finding) => !finding.passed),
+      passedFindings: reportFindings.filter((finding) => finding.passed),
+      verifiedFindings: makeSnapshot(verifiedFindings),
+      verification: {
+        schemaVersion: 1,
+        previousReportId: "previous-report",
+        domain: "example.com",
+        reconciledAt: afterTime,
+        transitions,
+      },
+    },
+  };
+  const text = makeReportPdfTextLines(input).join(" ");
+  const pdfText = new TextDecoder().decode(buildReportPdf(input));
+
+  assert.match(text, /Fixed and verified: csp/);
+  assert.match(text, /Observed pass: spf/);
+  assert.match(text, /Regressed: hsts/);
+  assert.match(text, /Before evidence: csp returned Not observed/);
+  assert.match(text, /After evidence: csp returned default-src/);
+  assert.match(text, /raw DNS answer was not stored/);
+  assert.match(pdfText, /VERIFICATION LOOP - Fixed and verified/);
+  assert.match(pdfText, /VERIFICATION LOOP - Regressed/);
+  assert.doesNotMatch(pdfText, /legacy scan|legacy report|schemaVersion/i);
 });

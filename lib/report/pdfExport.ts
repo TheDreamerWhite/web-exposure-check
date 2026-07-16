@@ -8,9 +8,11 @@ import {
   verificationLabels,
 } from "../findings/presentation";
 import type {
+  FindingVerificationTransition,
   FindingPriority,
   VerifiedFinding,
 } from "../findings/types";
+import { summarizeVerificationTransitions } from "../findings/verification";
 import type { BusinessSecurityReport, ReportFinding } from "./types";
 
 export type PdfExportInput = {
@@ -292,9 +294,46 @@ function getFindingPresentation(
   };
 }
 
+function getTransitionLabel(transition: FindingVerificationTransition) {
+  if (transition.changeType === "fixed_and_verified") {
+    return "Fixed and verified";
+  }
+  if (transition.changeType === "observed_pass") return "Observed pass";
+  if (transition.changeType === "regressed") return "Regressed";
+  if (transition.changeType === "new_finding") return "New finding";
+  return "Still needs work";
+}
+
+function shouldShowTransitionEvidence(
+  transition: FindingVerificationTransition | undefined
+) {
+  return Boolean(
+    transition &&
+      (transition.changeType === "fixed_and_verified" ||
+        transition.changeType === "regressed" ||
+        (transition.changeType === "observed_pass" &&
+          transition.previousPassed === false &&
+          transition.currentPassed))
+  );
+}
+
+function summarizeTransitionEvidence(
+  evidence: FindingVerificationTransition["beforeEvidence"]
+) {
+  if (evidence.length === 0) return "No comparable evidence was stored.";
+
+  return evidence
+    .map(
+      (item) =>
+        `${item.summary} Source: ${item.source}. Value: ${item.value}.`
+    )
+    .join(" ");
+}
+
 function measureFindingCard(
   finding: ReportFinding,
   verified: VerifiedFinding | undefined,
+  transition: FindingVerificationTransition | undefined,
   width: number
 ) {
   const innerWidth = width - 28;
@@ -320,6 +359,44 @@ function measureFindingCard(
     8.5,
     "bold"
   );
+  const transitionBlock = shouldShowTransitionEvidence(transition)
+    ? {
+        transition: transition!,
+        reasonLines: wrapTextToWidth(
+          transition!.verificationReason,
+          innerWidth,
+          8
+        ),
+        beforeMetaLines: wrapTextToWidth(
+          `Status: ${transition!.previousObservedStatus || "Not available"} | Confidence: ${transition!.previousConfidence ? confidenceLabels[transition!.previousConfidence] : "Not available"} | Observed: ${formatScanDate(transition!.previousObservationTime || "")}`,
+          innerWidth,
+          8
+        ),
+        beforeEvidenceLines: wrapTextToWidth(
+          summarizeTransitionEvidence(transition!.beforeEvidence),
+          innerWidth,
+          8
+        ),
+        afterMetaLines: wrapTextToWidth(
+          `Status: ${transition!.currentObservedStatus} | Confidence: ${confidenceLabels[transition!.currentConfidence]} | Observed: ${formatScanDate(transition!.currentObservationTime)}`,
+          innerWidth,
+          8
+        ),
+        afterEvidenceLines: wrapTextToWidth(
+          summarizeTransitionEvidence(transition!.afterEvidence),
+          innerWidth,
+          8
+        ),
+      }
+    : null;
+  const transitionHeight = transitionBlock
+    ? 76 +
+      transitionBlock.reasonLines.length * 10.5 +
+      transitionBlock.beforeMetaLines.length * 10.5 +
+      transitionBlock.beforeEvidenceLines.length * 10.5 +
+      transitionBlock.afterMetaLines.length * 10.5 +
+      transitionBlock.afterEvidenceLines.length * 10.5
+    : 0;
 
   const height =
     176 +
@@ -328,7 +405,8 @@ function measureFindingCard(
     ownerLines.length * 11.5 +
     evidenceLines.length * 10.5 +
     limitationLines.length * 10.5 +
-    stepLines.length * 11.5;
+    stepLines.length * 11.5 +
+    transitionHeight;
 
   return {
     presentation,
@@ -338,6 +416,7 @@ function measureFindingCard(
     limitationLines,
     stepLines,
     ownerLines,
+    transitionBlock,
     height,
   };
 }
@@ -345,9 +424,15 @@ function measureFindingCard(
 function drawFindingCard(
   layout: PdfLayout,
   finding: ReportFinding,
-  verified: VerifiedFinding | undefined
+  verified: VerifiedFinding | undefined,
+  transition: FindingVerificationTransition | undefined
 ) {
-  const card = measureFindingCard(finding, verified, CONTENT_WIDTH);
+  const card = measureFindingCard(
+    finding,
+    verified,
+    transition,
+    CONTENT_WIDTH
+  );
   const priority = card.presentation.priority;
 
   layout.ensureSpace(card.height + 10);
@@ -438,6 +523,60 @@ function drawFindingCard(
     color: colors.warning,
   });
   y += card.limitationLines.length * 10.5 + 10;
+
+  if (card.transitionBlock) {
+    const transitionData = card.transitionBlock;
+
+    layout.line(innerX, y, innerX + innerWidth, y, colors.border);
+    y += 10;
+    layout.text(
+      `VERIFICATION LOOP - ${getTransitionLabel(transitionData.transition)}`,
+      innerX,
+      y,
+      7,
+      "bold",
+      transitionData.transition.changeType === "regressed"
+        ? colors.danger
+        : colors.teal
+    );
+    y += 12;
+    layout.textLines(transitionData.reasonLines, innerX, y, {
+      fontSize: 8,
+      lineHeight: 10.5,
+      color: colors.text,
+    });
+    y += transitionData.reasonLines.length * 10.5 + 8;
+
+    layout.text("BEFORE", innerX, y, 7, "bold", colors.muted);
+    y += 11;
+    layout.textLines(transitionData.beforeMetaLines, innerX, y, {
+      fontSize: 8,
+      lineHeight: 10.5,
+      font: "bold",
+    });
+    y += transitionData.beforeMetaLines.length * 10.5;
+    layout.textLines(transitionData.beforeEvidenceLines, innerX, y, {
+      fontSize: 8,
+      lineHeight: 10.5,
+      color: colors.muted,
+    });
+    y += transitionData.beforeEvidenceLines.length * 10.5 + 8;
+
+    layout.text("AFTER", innerX, y, 7, "bold", colors.muted);
+    y += 11;
+    layout.textLines(transitionData.afterMetaLines, innerX, y, {
+      fontSize: 8,
+      lineHeight: 10.5,
+      font: "bold",
+    });
+    y += transitionData.afterMetaLines.length * 10.5;
+    layout.textLines(transitionData.afterEvidenceLines, innerX, y, {
+      fontSize: 8,
+      lineHeight: 10.5,
+      color: colors.muted,
+    });
+    y += transitionData.afterEvidenceLines.length * 10.5 + 10;
+  }
 
   layout.line(innerX, y, innerX + innerWidth, y, colors.border);
   y += 10;
@@ -587,14 +726,67 @@ function drawSummaryPage(layout: PdfLayout, input: PdfExportInput) {
     `Collect more evidence: ${summary.priorities.needsMoreEvidence}`,
     `Schedule later: ${summary.priorities.scheduleLater}`,
   ].join("  |  ");
-  layout.rect(PAGE_MARGIN, y, CONTENT_WIDTH, 56, colors.surface, colors.border);
+  const priorityLines = wrapTextToWidth(
+    priorityText,
+    CONTENT_WIDTH - 28,
+    8.5,
+    "bold"
+  );
+  const verificationSummary = report.verification
+    ? summarizeVerificationTransitions(report.verification.transitions)
+    : null;
+  const verificationText = verificationSummary
+    ? `Fixed and verified: ${verificationSummary.fixedAndVerified} | Observed pass: ${verificationSummary.observedPass} | Regressed: ${verificationSummary.regressed} | Still needs work: ${verificationSummary.stillNeedsWork} | New finding: ${verificationSummary.newFindings}`
+    : "";
+  const verificationLines = verificationText
+    ? wrapTextToWidth(verificationText, CONTENT_WIDTH - 28, 8, "bold")
+    : [];
+  const priorityBoxHeight =
+    36 +
+    priorityLines.length * 12 +
+    (verificationSummary ? 26 + verificationLines.length * 11 : 0);
+
+  layout.rect(
+    PAGE_MARGIN,
+    y,
+    CONTENT_WIDTH,
+    priorityBoxHeight,
+    colors.surface,
+    colors.border
+  );
   layout.text("PRIORITY OVERVIEW", PAGE_MARGIN + 14, y + 12, 7.5, "bold", colors.teal);
-  layout.wrappedText(priorityText, PAGE_MARGIN + 14, y + 29, CONTENT_WIDTH - 28, {
+  layout.textLines(priorityLines, PAGE_MARGIN + 14, y + 29, {
     fontSize: 8.5,
     lineHeight: 12,
     font: "bold",
   });
-  y += 74;
+
+  if (verificationSummary) {
+    const verificationTop = y + 34 + priorityLines.length * 12;
+    layout.line(
+      PAGE_MARGIN + 14,
+      verificationTop,
+      PAGE_MARGIN + CONTENT_WIDTH - 14,
+      verificationTop,
+      colors.border
+    );
+    layout.text(
+      "VERIFICATION LOOP",
+      PAGE_MARGIN + 14,
+      verificationTop + 9,
+      7.2,
+      "bold",
+      colors.teal
+    );
+    layout.textLines(
+      verificationLines,
+      PAGE_MARGIN + 14,
+      verificationTop + 22,
+      { fontSize: 8, lineHeight: 11, font: "bold", color: colors.text }
+    );
+  }
+
+  y += priorityBoxHeight + 18;
 
   const scopeText =
     "Authorized, non-invasive scope: this report uses public DNS, TLS, HTTP, header, and website evidence. It does not exploit vulnerabilities, access private pages, or replace a penetration test or code review.";
@@ -612,12 +804,19 @@ function drawSummaryPage(layout: PdfLayout, input: PdfExportInput) {
 
 function drawFindings(layout: PdfLayout, input: PdfExportInput) {
   const verifiedSnapshot = input.report.verifiedFindings;
+  const transitionsByCheckKey = new Map(
+    input.report.verification?.transitions.map((transition) => [
+      transition.checkKey,
+      transition,
+    ]) || []
+  );
   const findings = input.report.findings
     .map((finding) => ({
       finding,
       verified: verifiedSnapshot
         ? getVerifiedFinding(verifiedSnapshot, finding.checkKey)
         : undefined,
+      transition: transitionsByCheckKey.get(finding.checkKey),
     }))
     .sort((left, right) => {
       const leftPriority = getFindingPriority(left.finding, left.verified);
@@ -641,8 +840,9 @@ function drawFindings(layout: PdfLayout, input: PdfExportInput) {
     if (group.length === 0) return;
 
     const cardHeights = group.map(
-      ({ finding, verified }) =>
-        measureFindingCard(finding, verified, CONTENT_WIDTH).height + 10
+      ({ finding, verified, transition }) =>
+        measureFindingCard(finding, verified, transition, CONTENT_WIDTH).height +
+        10
     );
     const groupHeight = 28 + cardHeights.reduce((total, height) => total + height, 0);
     const fullPageCapacity = CONTENT_BOTTOM - CONTENT_TOP;
@@ -666,8 +866,8 @@ function drawFindings(layout: PdfLayout, input: PdfExportInput) {
     );
     layout.cursorY += 28;
 
-    group.forEach(({ finding, verified }) => {
-      drawFindingCard(layout, finding, verified);
+    group.forEach(({ finding, verified, transition }) => {
+      drawFindingCard(layout, finding, verified, transition);
     });
   });
 }
@@ -761,8 +961,43 @@ export function makeReportPdfTextLines(input: PdfExportInput) {
     summary ? `Publicly observable: ${summary.externallyObservable}` : "Publicly observable: Not available",
     "Priority is a workflow score, not a CVSS rating.",
     "Authorized, non-invasive public checks only. No exploitation or private-page access was performed.",
-    "Findings by priority",
   ].filter(Boolean);
+
+  if (report.verification) {
+    const verificationSummary = summarizeVerificationTransitions(
+      report.verification.transitions
+    );
+
+    lines.push("Verification loop");
+    lines.push(`Fixed and verified: ${verificationSummary.fixedAndVerified}`);
+    lines.push(`Observed pass: ${verificationSummary.observedPass}`);
+    lines.push(`Regressed: ${verificationSummary.regressed}`);
+    lines.push(`Still needs work: ${verificationSummary.stillNeedsWork}`);
+    lines.push(`New finding: ${verificationSummary.newFindings}`);
+
+    report.verification.transitions
+      .filter(shouldShowTransitionEvidence)
+      .forEach((transition) => {
+        lines.push(
+          `${getTransitionLabel(transition)}: ${transition.checkKey}`
+        );
+        lines.push(`Verification reason: ${transition.verificationReason}`);
+        lines.push(
+          `Before: ${transition.previousObservedStatus || "Not available"} | Confidence: ${transition.previousConfidence ? confidenceLabels[transition.previousConfidence] : "Not available"} | Observed: ${formatScanDate(transition.previousObservationTime || "")}`
+        );
+        lines.push(
+          `Before evidence: ${summarizeTransitionEvidence(transition.beforeEvidence)}`
+        );
+        lines.push(
+          `After: ${transition.currentObservedStatus} | Confidence: ${confidenceLabels[transition.currentConfidence]} | Observed: ${formatScanDate(transition.currentObservationTime)}`
+        );
+        lines.push(
+          `After evidence: ${summarizeTransitionEvidence(transition.afterEvidence)}`
+        );
+      });
+  }
+
+  lines.push("Findings by priority");
 
   priorityOrder.forEach((priority) => {
     const grouped = report.findings.filter((finding) => {

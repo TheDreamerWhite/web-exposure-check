@@ -1,4 +1,5 @@
 export const verifiedFindingSchemaVersion = 1 as const;
+export const verificationLoopSchemaVersion = 1 as const;
 
 export type FindingConfidence = "confirmed" | "likely" | "possible";
 
@@ -88,4 +89,37 @@ export type VerifiedFindingsSnapshot = {
   language: string;
   generatedAt: string;
   findings: VerifiedFinding[];
+};
+
+export type VerificationTransitionKind =
+  | "fixed_and_verified"
+  | "observed_pass"
+  | "regressed"
+  | "still_needs_work"
+  | "new_finding";
+
+export type FindingVerificationTransition = {
+  previousReportId: string;
+  checkKey: string;
+  previousObservedStatus: string | null;
+  currentObservedStatus: string;
+  previousPassed: boolean | null;
+  currentPassed: boolean;
+  previousConfidence: FindingConfidence | null;
+  currentConfidence: FindingConfidence;
+  previousObservationTime: string | null;
+  currentObservationTime: string;
+  beforeEvidence: FindingEvidence[];
+  afterEvidence: FindingEvidence[];
+  changeType: VerificationTransitionKind;
+  resultingVerificationStatus: VerificationStatus;
+  verificationReason: string;
+};
+
+export type VerificationReconciliation = {
+  schemaVersion: typeof verificationLoopSchemaVersion;
+  previousReportId: string;
+  domain: string;
+  reconciledAt: string;
+  transitions: FindingVerificationTransition[];
 };

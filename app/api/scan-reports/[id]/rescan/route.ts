@@ -1,12 +1,20 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { generateBusinessReport } from "@/lib/report/generateReport";
-import { reportLanguages, type ReportLanguage } from "@/lib/report/types";
+import {
+  reportLanguages,
+  type BusinessSecurityReportWithVerifiedFindings,
+  type ReportLanguage,
+  type ReportScanResult,
+} from "@/lib/report/types";
+import { readWebsite } from "@/lib/reader/read-website";
 import { runExposureScan, ScanInputError } from "@/lib/scan/run-scan";
 import {
   createScanReport,
   getScanReportById,
 } from "@/lib/scans/history";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { withVerifiedFindings } from "@/lib/findings/compatibility";
+import { reconcileVerifiedFindings } from "@/lib/findings/verification";
 
 export const runtime = "nodejs";
 
@@ -51,13 +59,41 @@ export async function POST(_request: NextRequest, { params }: RouteProps) {
   }
 
   try {
-    const scanResult = await runExposureScan(previousReport.domain);
+    const baseScanResult = await runExposureScan(previousReport.domain);
+    let scanResult: ReportScanResult = baseScanResult;
+
+    try {
+      scanResult = {
+        ...baseScanResult,
+        websiteReadResult: await readWebsite(previousReport.domain),
+      };
+    } catch (error) {
+      console.warn(
+        "Website evidence could not be refreshed during re-scan:",
+        error
+      );
+    }
+
     const locale = normalizeLocale(previousReport.locale);
     const generatedReport = generateBusinessReport(scanResult, locale);
+    const previousSnapshot = withVerifiedFindings(
+      previousReport.scan_result,
+      previousReport.generated_report
+    ).verifiedFindings;
+    const reconciled = reconcileVerifiedFindings(
+      previousSnapshot,
+      generatedReport.verifiedFindings,
+      { previousReportId: previousReport.id }
+    );
+    const generatedReportWithVerification: BusinessSecurityReportWithVerifiedFindings = {
+      ...generatedReport,
+      verifiedFindings: reconciled.snapshot,
+      verification: reconciled.verification,
+    };
     const report = await createScanReport({
       userId: user.id,
       scanResult,
-      generatedReport,
+      generatedReport: generatedReportWithVerification,
       locale,
       customerName: previousReport.customer_name || undefined,
       internalNote: previousReport.internal_note || undefined,

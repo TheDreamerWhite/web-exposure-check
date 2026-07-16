@@ -1,10 +1,16 @@
-import { getCheckTone } from "@/lib/scan/checks";
+import { getCheckTone } from "../scan/checks";
+import type {
+  FindingVerificationTransition,
+  VerificationTransitionKind,
+} from "@/lib/findings/types";
 import type { ReportScanResult } from "./types";
 
 export type CheckComparisonStatus =
-  | "Fixed"
+  | "Fixed and verified"
+  | "Observed pass"
+  | "Regressed"
   | "Still needs work"
-  | "New issue"
+  | "New finding"
   | "No change";
 
 export type CheckComparison = {
@@ -21,9 +27,11 @@ export type ReportComparison = {
   previousRiskLevel: string;
   currentRiskLevel: string;
   checks: CheckComparison[];
-  fixed: CheckComparison[];
+  fixedAndVerified: CheckComparison[];
+  observedPass: CheckComparison[];
+  regressed: CheckComparison[];
   stillNeedsWork: CheckComparison[];
-  newIssues: CheckComparison[];
+  newFindings: CheckComparison[];
   noChange: CheckComparison[];
 };
 
@@ -31,10 +39,24 @@ function isProblem(status: string) {
   return getCheckTone(status) !== "ok";
 }
 
+function getTransitionStatus(
+  changeType: VerificationTransitionKind
+): CheckComparisonStatus {
+  if (changeType === "fixed_and_verified") return "Fixed and verified";
+  if (changeType === "observed_pass") return "Observed pass";
+  if (changeType === "regressed") return "Regressed";
+  if (changeType === "new_finding") return "New finding";
+  return "Still needs work";
+}
+
 export function compareScanReports(
   previous: ReportScanResult,
-  current: ReportScanResult
+  current: ReportScanResult,
+  transitions: FindingVerificationTransition[] = []
 ): ReportComparison {
+  const transitionsByCheckKey = new Map(
+    transitions.map((transition) => [transition.checkKey, transition])
+  );
   const keys = Array.from(
     new Set([...Object.keys(previous.checks), ...Object.keys(current.checks)])
   );
@@ -44,14 +66,17 @@ export function compareScanReports(
     const currentStatus = current.checks[checkKey] || "Missing";
     const previousProblem = isProblem(previousStatus);
     const currentProblem = isProblem(currentStatus);
+    const transition = transitionsByCheckKey.get(checkKey);
     let status: CheckComparisonStatus = "No change";
 
-    if (previousProblem && !currentProblem) {
-      status = "Fixed";
+    if (transition) {
+      status = getTransitionStatus(transition.changeType);
+    } else if (previousProblem && !currentProblem) {
+      status = "Observed pass";
     } else if (previousProblem && currentProblem) {
       status = "Still needs work";
     } else if (!previousProblem && currentProblem) {
-      status = "New issue";
+      status = "New finding";
     }
 
     return {
@@ -69,9 +94,13 @@ export function compareScanReports(
     previousRiskLevel: previous.riskLevel,
     currentRiskLevel: current.riskLevel,
     checks,
-    fixed: checks.filter((check) => check.status === "Fixed"),
+    fixedAndVerified: checks.filter(
+      (check) => check.status === "Fixed and verified"
+    ),
+    observedPass: checks.filter((check) => check.status === "Observed pass"),
+    regressed: checks.filter((check) => check.status === "Regressed"),
     stillNeedsWork: checks.filter((check) => check.status === "Still needs work"),
-    newIssues: checks.filter((check) => check.status === "New issue"),
+    newFindings: checks.filter((check) => check.status === "New finding"),
     noChange: checks.filter((check) => check.status === "No change"),
   };
 }

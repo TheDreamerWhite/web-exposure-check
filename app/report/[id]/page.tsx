@@ -63,7 +63,11 @@ export default async function ReportPage({
   }
 
   const comparison = previousReport
-    ? compareScanReports(previousReport.scan_result, report.scan_result)
+    ? compareScanReports(
+        previousReport.scan_result,
+        report.scan_result,
+        report.generated_report.verification?.transitions
+      )
     : null;
   const agencyProfile = await getAgencyProfile(user.id);
 

@@ -24,4 +24,5 @@ run([
   "--test",
   ".test-dist/tests/findings/compatibility.test.js",
   ".test-dist/tests/findings/presentation.test.js",
+  ".test-dist/tests/findings/verification.test.js",
 ]);
