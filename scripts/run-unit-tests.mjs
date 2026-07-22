@@ -25,4 +25,5 @@ run([
   ".test-dist/tests/findings/compatibility.test.js",
   ".test-dist/tests/findings/presentation.test.js",
   ".test-dist/tests/findings/verification.test.js",
+  ".test-dist/tests/security/content-security-policy.test.js",
 ]);
