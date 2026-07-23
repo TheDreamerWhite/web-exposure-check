@@ -18,6 +18,8 @@
   },
   "include": [
     "lib/findings/**/*.ts",
-    "tests/findings/**/*.ts"
+    "lib/security/**/*.ts",
+    "tests/findings/**/*.ts",
+    "tests/security/**/*.ts"
   ]
 }
